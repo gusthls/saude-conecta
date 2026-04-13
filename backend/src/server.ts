@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import { connectDB } from './config/database'
 
 dotenv.config()
 
@@ -16,6 +17,11 @@ app.get('/', (req, res) => {
   res.json({ message: 'API Saúde Conecta rodando!' })
 })
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`)
-})
+const start = async () => {
+  await connectDB()
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`)
+  })
+}
+
+start()
