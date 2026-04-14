@@ -64,7 +64,7 @@ export function AuthPage({
 
                 {/* Footer */}
                 <div className="relative z-10 text-xs text-blue-100/70">
-                    © 2026 Clínica Saúde+. Todos os direitos reservados.
+                    © 2026 Saúde Conecta. Todos os direitos reservados.
                 </div>
             </div>
 
