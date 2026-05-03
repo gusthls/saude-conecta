@@ -3,6 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import { connectDB } from './config/database'
 import pool from "./config/database"
+import authRoutes from "./routes/authRoutes"
 import adminRoutes from "./routes/adminsRoutes"
 import patientRoutes from "./routes/patientsRoutes"
 import medicRoutes from "./routes/medicRoutes"
@@ -41,6 +42,7 @@ app.get("/test-db", async (req, res) => {
  })
 
 //API Routes
+app.use('/api', authRoutes);
 app.use("/api", patientRoutes)
 app.use("/api", medicRoutes)
 app.use("/api", secretaryRoutes)
@@ -49,7 +51,9 @@ app.use("/api", appointmentRoutes)
 
 const start = async () => {
   try {
-   await connectDB()
+    console.log("Iniciando servidor...");
+    await connectDB()
+    console.log("Banco conectado!");
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`)
   })
