@@ -29,19 +29,27 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    reset,
   } = useForm<LoginFormData>();
 
   const onSubmit = async (data: LoginFormData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const res = await fetch('http://localhost:3000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
 
-    console.log("Dados do login:", data);
-    toast.success("Login realizado com sucesso!", {
-      description: "Bem-vindo de volta!",
-    });
+      const result = await res.json();
 
-    reset();
+      if (res.ok) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro na requisição');
+    }
   };
 
   return (
