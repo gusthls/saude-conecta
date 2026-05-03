@@ -4,7 +4,7 @@ import pool from "../config/database"
 
 export const getPatients = async (req: Request, res: Response) => {
   try {
-    const response = await pool.request().query("SELECT * FROM patients")
+    const response = await pool.request().query("SELECT * FROM clients")
 
     return res.status(200).json(response.recordset)
 
