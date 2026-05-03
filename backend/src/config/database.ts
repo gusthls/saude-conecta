@@ -10,8 +10,9 @@ const config: sql.config = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   options: {
-    encrypt: false,
-    trustServerCertificate: true
+    encrypt: true,
+    trustServerCertificate: true,
+    enableArithAbort: true
   }
 }
 
