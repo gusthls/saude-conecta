@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { Label } from "../components/Label";
@@ -33,10 +33,15 @@ export function RegistrationForm({ onSwitchToLogin }: RegistrationFormProps) {
 
     const {
         register,
+        control,
         handleSubmit,
         formState: { errors, isSubmitting },
     } = useForm<RegistrationFormData>();
 
+    const passwordValue = useWatch({
+        control,
+        name: "password",
+    });
 
     const onSubmit = async (data: RegistrationFormData) => {
         try {
@@ -270,7 +275,7 @@ export function RegistrationForm({ onSwitchToLogin }: RegistrationFormProps) {
                                     required:
                                         "Confirmação de senha é obrigatória",
                                     validate: (value) =>
-                                        value === password ||
+                                        value === passwordValue ||
                                         "As senhas não coincidem",
                                 })}
                                 className={
