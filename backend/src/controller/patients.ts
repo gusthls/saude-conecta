@@ -1,6 +1,7 @@
 import { Request, Response } from "express"
 import pool from "../config/database"
 
+const now = new Date();
 
 export const getPatients = async (req: Request, res: Response) => {
   try {
@@ -19,9 +20,9 @@ export const getPatients = async (req: Request, res: Response) => {
 
 
 export const createPatient = async (req: Request, res: Response) => {
-  const { name, cpf, email, phone, password, rc, status_id } = req.body
+  const { name, cpf, email, phone, password, status } = req.body
 
-  if (!name || !cpf || !email || !password || !rc || !status_id) {
+  if (!name || !cpf || !email || !password || !status) {
     return res.status(400).json({
       message: "Campos obrigatórios não preenchidos"
     })
@@ -29,17 +30,18 @@ export const createPatient = async (req: Request, res: Response) => {
 
   try {
     await pool.request()
-      .input("name", name)
-      .input("cpf", cpf)
-      .input("email", email)
-      .input("phone", phone)
-      .input("password", password)
-      .input("rc", rc)
-      .input("status_id", status_id)
-      .query(`
-        INSERT INTO patients (name, cpf, email, phone, password, rc, status_id)
-        VALUES (@name, @cpf, @email, @phone, @password, @rc, @status_id)
-      `)
+    .input("name", name)
+    .input("cpf", cpf)
+    .input("email", email)
+    .input("phone", phone)
+    .input("password", password)
+    .input("created_at", now)
+    .input("updated_at", now)
+    .input("status", status)
+    .query(`
+      INSERT INTO patients (name, cpf, email, phone, password, created_at, updated_at, status)
+      VALUES (@name, @cpf, @email, @phone, @password, @created_at, @updated_at, @status)
+    `);
 
     return res.status(201).json({
       message: "Paciente cadastrado com sucesso"
