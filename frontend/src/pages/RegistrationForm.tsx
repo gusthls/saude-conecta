@@ -34,11 +34,9 @@ export function RegistrationForm({ onSwitchToLogin }: RegistrationFormProps) {
     const {
         register,
         handleSubmit,
-        watch,
         formState: { errors, isSubmitting },
     } = useForm<RegistrationFormData>();
 
-    const password = watch("password");
 
     const onSubmit = async (data: RegistrationFormData) => {
         try {
