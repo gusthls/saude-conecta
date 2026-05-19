@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { Label } from "../components/Label";
@@ -33,24 +33,52 @@ export function RegistrationForm({ onSwitchToLogin }: RegistrationFormProps) {
 
     const {
         register,
+        control,
         handleSubmit,
-        watch,
         formState: { errors, isSubmitting },
-        reset,
     } = useForm<RegistrationFormData>();
 
-    const password = watch("password");
+    const passwordValue = useWatch({
+        control,
+        name: "password",
+    });
 
     const onSubmit = async (data: RegistrationFormData) => {
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        try {
+            const response = await fetch("http://localhost:3000/api/patients", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: data.fullName,
+                    cpf: data.cpf,
+                    email: data.email,
+                    phone: data.phone,
+                    password: data.password,
+                    status: 1
+                }),
+            });
 
-        console.log("Dados do cadastro:", data);
-        toast.success("Cadastro realizado com sucesso!", {
-            description: `Bem-vindo(a), ${data.fullName}!`,
-        });
+            if (!response.ok) {
+                const errorData = await response.json();
+                toast.error("Erro no cadastro", {
+                    description: errorData.message || "Algo deu errado"
+                });
+                return;
+            }
 
-        reset();
+            const result = await response.json();
+            toast.success("Cadastro realizado com sucesso!", {
+                description: `Bem-vindo(a), ${data.fullName}!`,
+            });
+            console.log(result);
+        } catch (error) {
+            console.error("Erro ao cadastrar paciente:", error);
+            toast.error("Erro no cadastro", {
+                description: "Não foi possível conectar ao servidor"
+            });
+        }
     };
 
     return (
@@ -124,7 +152,7 @@ export function RegistrationForm({ onSwitchToLogin }: RegistrationFormProps) {
                             {...register("phone", {
                                 required: "Telefone é obrigatório",
                                 pattern: {
-                                    value: /^[\d\s\(\)\-\+]+$/,
+                                    value: /^[\d\s()+-]+$/,
                                     message: "Telefone inválido",
                                 },
                             })}
@@ -247,7 +275,7 @@ export function RegistrationForm({ onSwitchToLogin }: RegistrationFormProps) {
                                     required:
                                         "Confirmação de senha é obrigatória",
                                     validate: (value) =>
-                                        value === password ||
+                                        value === passwordValue ||
                                         "As senhas não coincidem",
                                 })}
                                 className={
