@@ -21,7 +21,6 @@ export function AppointmentModal({
         time: "",
         specialty: "",
         doctor: "",
-        notes: "",
     });
 
     if (!open) return null;
@@ -45,8 +44,7 @@ export function AppointmentModal({
             date: "",
             time: "",
             specialty: "",
-            doctor: "",
-            notes: "",
+            doctor: ""
         });
 
         onClose();
@@ -119,13 +117,6 @@ export function AppointmentModal({
 
                     <div>
                         <Label>Observações</Label>
-
-                        <textarea
-                            name="notes"
-                            value={formData.notes}
-                            onChange={handleChange}
-                            className="w-full min-h-[100px] border border-border rounded-md bg-input-background p-3"
-                        />
                     </div>
 
                     <div className="flex justify-end gap-3">
