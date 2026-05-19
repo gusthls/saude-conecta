@@ -20,9 +20,11 @@ interface LoginFormData {
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
+  onSwitchToForgotPassword: () => void;
+  onLogin: () => void;
 }
 
-export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
+export function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword, onLogin }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -42,6 +44,7 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
     });
 
     reset();
+    onLogin();
   };
 
   return (
@@ -112,9 +115,13 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
 
           {/* Esqueci a senha */}
           <div className="text-right">
-            <a href="#" className="text-sm text-primary hover:underline">
+            <button
+              type="button"
+              onClick={onSwitchToForgotPassword}
+              className="text-sm text-primary hover:underline"
+            >
               Esqueci minha senha
-            </a>
+            </button>
           </div>
 
           {/* Botão de submit */}
