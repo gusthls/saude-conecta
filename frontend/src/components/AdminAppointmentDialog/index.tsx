@@ -74,7 +74,6 @@ export function AdminAppointmentDialog({
         watch,
     } = useForm<AdminAppointmentFormData>();
 
-    const selectedDate = watch("date");
     const selectedSpecialty =
         watch("specialty");
 
