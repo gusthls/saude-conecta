@@ -16,7 +16,7 @@ type ViewType =
 function App() {
     // controla se está logado
     const [isLoggedIn, setIsLoggedIn] =
-        useState(true);
+        useState(false);
 
     // controla qual tela auth aparece
     const [currentView, setCurrentView] =
