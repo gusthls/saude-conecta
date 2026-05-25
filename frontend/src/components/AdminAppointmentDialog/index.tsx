@@ -119,8 +119,7 @@ export function AdminAppointmentDialog({
                     </h2>
 
                     <p className="text-muted-foreground mt-1">
-                        Agende uma consulta para um
-                        paciente
+                        Agende uma consulta para um paciente
                     </p>
                 </div>
 
