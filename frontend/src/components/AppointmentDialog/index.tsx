@@ -1,11 +1,11 @@
 import { useForm } from "react-hook-form";
+import { useMemo } from "react";
 
 import { Button } from "../Button";
 import { Input } from "../Input";
 import { Label } from "../Label";
 
 export interface AppointmentFormData {
-    patientName: string;
     date: string;
     time: string;
     specialty: string;
@@ -18,20 +18,45 @@ interface AppointmentDialogProps {
     onSubmit: (data: AppointmentFormData) => void;
 }
 
-const specialties = [
-    "Cardiologia",
-    "Dermatologia",
-    "Ortopedia",
-    "Pediatria",
-    "Clínico Geral",
-];
+// Mapeamento de médicos por especialidade
+const medicsBySpecialty: Record<string, string[]> =
+    {
+        Cardiologia: [
+            "Dr. João Silva",
+            "Dra. Ana Oliveira",
+        ],
+        Dermatologia: [
+            "Dra. Maria Santos",
+            "Dr. Pedro Costa",
+        ],
+        Ortopedia: [
+            "Dr. João Silva",
+            "Dr. Pedro Costa",
+        ],
+        Pediatria: [
+            "Dra. Maria Santos",
+            "Dra. Ana Oliveira",
+        ],
+        "Clínico Geral": [
+            "Dr. João Silva",
+            "Dra. Maria Santos",
+        ],
+    };
 
-const doctors = [
-    "Dr. João Silva",
-    "Dra. Maria Santos",
-    "Dr. Pedro Costa",
-    "Dra. Ana Oliveira",
-];
+const specialties = Object.keys(
+    medicsBySpecialty
+);
+
+// Função para gerar horários disponíveis (07h até 20h com intervalos de 30 minutos)
+function generateAvailableTimes(): string[] {
+    const times: string[] = [];
+    for (let hour = 7; hour < 20; hour++) {
+        times.push(`${String(hour).padStart(2, "0")}:00`);
+        times.push(`${String(hour).padStart(2, "0")}:30`);
+    }
+    times.push("20:00");
+    return times;
+}
 
 export function AppointmentDialog({
     open,
@@ -43,15 +68,40 @@ export function AppointmentDialog({
         handleSubmit,
         formState: { errors },
         reset,
+        watch,
     } = useForm<AppointmentFormData>();
+
+    const selectedDate = watch("date");
+    const selectedSpecialty =
+        watch("specialty");
+
+    const availableTimes = useMemo(
+        () => generateAvailableTimes(),
+        []
+    );
+
+    const filteredDoctors = useMemo(() => {
+        if (!selectedSpecialty) {
+            return [];
+        }
+        return (
+            medicsBySpecialty[
+                selectedSpecialty
+            ] || []
+        );
+    }, [selectedSpecialty]);
+
+    // Obter a data mínima (hoje)
+    const today = new Date();
+    const minDate = today
+        .toISOString()
+        .split("T")[0];
 
     const handleFormSubmit = (
         data: AppointmentFormData
     ) => {
         onSubmit(data);
-
         reset();
-
         onOpenChange(false);
     };
 
@@ -77,37 +127,6 @@ export function AppointmentDialog({
                     )}
                     className="space-y-4"
                 >
-                    {/* Paciente */}
-                    <div className="space-y-2">
-                        <Label>Nome do Paciente</Label>
-
-                        <Input
-                            placeholder="Nome completo"
-                            {...register(
-                                "patientName",
-                                {
-                                    required:
-                                        "Nome obrigatório",
-                                }
-                            )}
-                            className={
-                                errors.patientName
-                                    ? "border-red-500"
-                                    : ""
-                            }
-                        />
-
-                        {errors.patientName && (
-                            <p className="text-sm text-red-500">
-                                {
-                                    errors
-                                        .patientName
-                                        .message
-                                }
-                            </p>
-                        )}
-                    </div>
-
                     {/* Data e Hora */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -115,9 +134,29 @@ export function AppointmentDialog({
 
                             <Input
                                 type="date"
+                                min={minDate}
                                 {...register("date", {
                                     required:
                                         "Data obrigatória",
+                                    validate: (value) => {
+                                        const selected =
+                                            new Date(
+                                                value
+                                            );
+                                        const today =
+                                            new Date();
+                                        today.setHours(
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        );
+                                        return (
+                                            selected >=
+                                            today
+                                        ) ||
+                                            "Não é permitido selecionar datas retroativas";
+                                    },
                                 })}
                                 className={
                                     errors.date
@@ -139,18 +178,34 @@ export function AppointmentDialog({
                         <div className="space-y-2">
                             <Label>Horário</Label>
 
-                            <Input
-                                type="time"
-                                {...register("time", {
-                                    required:
-                                        "Horário obrigatório",
-                                })}
-                                className={
+                            <select
+                                {...register(
+                                    "time",
+                                    {
+                                        required:
+                                            "Horário obrigatório",
+                                    }
+                                )}
+                                className={`w-full h-10 rounded-md border px-3 bg-input-background ${
                                     errors.time
                                         ? "border-red-500"
-                                        : ""
-                                }
-                            />
+                                        : "border-border"
+                                }`}
+                            >
+                                <option value="">
+                                    Selecione
+                                </option>
+                                {availableTimes.map(
+                                    (time) => (
+                                        <option
+                                            key={time}
+                                            value={time}
+                                        >
+                                            {time}
+                                        </option>
+                                    )
+                                )}
+                            </select>
 
                             {errors.time && (
                                 <p className="text-sm text-red-500">
@@ -217,24 +272,31 @@ export function AppointmentDialog({
                                 required:
                                     "Médico obrigatório",
                             })}
-                            className={`w-full h-10 rounded-md border px-3 bg-input-background ${
+                            disabled={
+                                !selectedSpecialty
+                            }
+                            className={`w-full h-10 rounded-md border px-3 bg-input-background disabled:opacity-50 disabled:cursor-not-allowed ${
                                 errors.doctor
                                     ? "border-red-500"
                                     : "border-border"
                             }`}
                         >
                             <option value="">
-                                Selecione
+                                {selectedSpecialty
+                                    ? "Selecione"
+                                    : "Selecione uma especialidade primeiro"}
                             </option>
 
-                            {doctors.map((doc) => (
-                                <option
-                                    key={doc}
-                                    value={doc}
-                                >
-                                    {doc}
-                                </option>
-                            ))}
+                            {filteredDoctors.map(
+                                (doc) => (
+                                    <option
+                                        key={doc}
+                                        value={doc}
+                                    >
+                                        {doc}
+                                    </option>
+                                )
+                            )}
                         </select>
 
                         {errors.doctor && (
@@ -245,13 +307,6 @@ export function AppointmentDialog({
                                 }
                             </p>
                         )}
-                    </div>
-
-                    {/* Observações */}
-                    <div className="space-y-2">
-                        <Label>
-                            Observações
-                        </Label>
                     </div>
 
                     {/* Botões */}
