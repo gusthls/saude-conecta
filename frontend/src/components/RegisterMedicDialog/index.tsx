@@ -8,7 +8,7 @@ interface RegisterMedicFormData {
     specialty: string;
     email: string;
     phone: string;
-    rm: string;
+    crm: string;
 }
 
 interface RegisterMedicDialogProps {
@@ -212,28 +212,28 @@ export function RegisterMedicDialog({
                         )}
                     </div>
 
-                    {/* RM */}
+                    {/* CRM */}
                     <div className="space-y-2">
                         <Label>
-                            RM (Registro de Médico)
+                            CRM (Registro de Médico)
                         </Label>
 
                         <Input
                             placeholder="123456"
-                            {...register("rm", {
+                            {...register("crm", {
                                 required:
-                                    "RM obrigatório",
+                                    "CRM obrigatório",
                             })}
                             className={
-                                errors.rm
+                                errors.crm
                                     ? "border-red-500"
                                     : ""
                             }
                         />
 
-                        {errors.rm && (
+                        {errors.crm && (
                             <p className="text-sm text-red-500">
-                                {errors.rm.message}
+                                {errors.crm.message}
                             </p>
                         )}
                     </div>
