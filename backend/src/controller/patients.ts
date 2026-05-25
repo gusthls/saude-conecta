@@ -5,7 +5,7 @@ const now = new Date();
 
 export const getPatients = async (req: Request, res: Response) => {
   try {
-    const response = await pool.request().query("SELECT * FROM clients")
+    const response = await pool.request().query("SELECT * FROM patients")
 
     return res.status(200).json(response.recordset)
 
@@ -74,7 +74,7 @@ export const updatePatient = async (req: Request, res: Response) => {
       .input("email", email)
       .input("phone", phone)
       .query(`
-        UPDATE clients
+        UPDATE patients
         SET name = COALESCE(@name, name),
             email = COALESCE(@email, email),
             phone = COALESCE(@phone, phone)

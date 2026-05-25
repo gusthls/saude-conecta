@@ -8,7 +8,7 @@ export const login = async (req: Request, res: Response) => {
     const result = await pool
       .request()
       .input('email', email)
-      .query('SELECT password FROM clients WHERE email = @email');
+      .query('SELECT password FROM patients WHERE email = @email');
 
     if (result.recordset.length === 0) {
       return res.status(401).json({ message: 'Email não encontrado' });
@@ -38,7 +38,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const result = await pool
       .request()
       .input('email', email)
-      .query('SELECT * FROM clients WHERE email = @email');
+      .query('SELECT * FROM patients WHERE email = @email');
 
     if (result.recordset.length === 0) {
       return res.status(404).json({ message: 'Email não encontrado' });
