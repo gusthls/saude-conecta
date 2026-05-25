@@ -91,7 +91,7 @@ export function AdminPanel({
         specialty: string;
         email: string;
         phone: string;
-        rm: string;
+        crm: string;
     }) => {
         console.log("Novo médico registrado:", data);
         setMedicDialogOpen(false);
