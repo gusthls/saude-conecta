@@ -71,7 +71,6 @@ export function AppointmentDialog({
         watch,
     } = useForm<AppointmentFormData>();
 
-    const selectedDate = watch("date");
     const selectedSpecialty =
         watch("specialty");
 
