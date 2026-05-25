@@ -13,9 +13,15 @@ import { AppointmentCard } from "../components/AppointmentCard";
 
 import { AppointmentDialog } from "../components/AppointmentDialog";
 
-import type {Appointment,UserType,} from "../types/appointments";
+import { AdminPanel } from "../components/AdminPanel";
+
+import type {
+    Appointment,
+    UserType,
+} from "../types/appointments";
 
 import type { AppointmentFormData } from "../components/AppointmentDialog";
+import type { AdminAppointmentFormData } from "../components/AdminAppointmentDialog";
 
 interface DashboardProps {
     onLogout: () => void;
@@ -28,8 +34,9 @@ export function Dashboard({
         ALTERE AQUI PARA TESTAR:
         "patient"
         "doctor"
+        "admin"
     */
-    const userType: UserType = "patient";
+    const userType: UserType = "admin";
 
     const [dialogOpen, setDialogOpen] =
         useState(false);
@@ -80,9 +87,23 @@ export function Dashboard({
     ) => {
         const newAppointment: Appointment = {
             id: Date.now().toString(),
-
+            patientName: "Paciente Atual",
             ...data,
+            status: "scheduled",
+        };
 
+        setAppointments([
+            newAppointment,
+            ...appointments,
+        ]);
+    };
+
+    const handleAdminCreateAppointment = (
+        data: AdminAppointmentFormData
+    ) => {
+        const newAppointment: Appointment = {
+            id: Date.now().toString(),
+            ...data,
             status: "scheduled",
         };
 
@@ -162,6 +183,19 @@ export function Dashboard({
                   ),
               ];
 
+    // Renderizar a interface do Admin
+    if (userType === "admin") {
+        return (
+            <AdminPanel
+                appointments={appointments}
+                onLogout={onLogout}
+                onCreateAppointment={
+                    handleAdminCreateAppointment
+                }
+            />
+        );
+    }
+
     return (
         <div className="min-h-screen bg-muted/30">
             {/* HEADER */}
@@ -211,14 +245,16 @@ export function Dashboard({
                         </p>
                     </div>
 
-                    <Button
-                        onClick={() =>
-                            setDialogOpen(true)
-                        }
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Nova Consulta
-                    </Button>
+                    {userType === "patient" && (
+                        <Button
+                            onClick={() =>
+                                setDialogOpen(true)
+                            }
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Nova Consulta
+                        </Button>
+                    )}
                 </div>
 
                 {/* FILTROS */}
@@ -321,23 +357,25 @@ export function Dashboard({
                                     }
                                 />
 
-                                {appointment.status ===
-                                    "scheduled" && (
-                                    <Button
-                                        variant="outline"
-                                        className="w-full"
-                                        onClick={() =>
-                                            handleCompleteAppointment(
-                                                appointment.id
-                                            )
-                                        }
-                                    >
-                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                {userType ===
+                                    "doctor" &&
+                                    appointment.status ===
+                                        "scheduled" && (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full"
+                                            onClick={() =>
+                                                handleCompleteAppointment(
+                                                    appointment.id
+                                                )
+                                            }
+                                        >
+                                            <CheckCircle className="w-4 h-4 mr-2" />
 
-                                        Marcar como
-                                        concluída
-                                    </Button>
-                                )}
+                                            Marcar como
+                                            concluída
+                                        </Button>
+                                    )}
                             </div>
                         )
                     )}
@@ -345,15 +383,17 @@ export function Dashboard({
             </main>
 
             {/* DIALOG */}
-            <AppointmentDialog
-                open={dialogOpen}
-                onOpenChange={
-                    setDialogOpen
-                }
-                onSubmit={
-                    handleCreateAppointment
-                }
-            />
+            {userType === "patient" && (
+                <AppointmentDialog
+                    open={dialogOpen}
+                    onOpenChange={
+                        setDialogOpen
+                    }
+                    onSubmit={
+                        handleCreateAppointment
+                    }
+                />
+            )}
         </div>
     );
 }

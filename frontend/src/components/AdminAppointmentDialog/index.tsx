@@ -5,17 +5,20 @@ import { Button } from "../Button";
 import { Input } from "../Input";
 import { Label } from "../Label";
 
-export interface AppointmentFormData {
+export interface AdminAppointmentFormData {
+    patientName: string;
     date: string;
     time: string;
     specialty: string;
     doctor: string;
 }
 
-interface AppointmentDialogProps {
+interface AdminAppointmentDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (data: AppointmentFormData) => void;
+    onSubmit: (
+        data: AdminAppointmentFormData
+    ) => void;
 }
 
 // Mapeamento de médicos por especialidade
@@ -58,18 +61,18 @@ function generateAvailableTimes(): string[] {
     return times;
 }
 
-export function AppointmentDialog({
+export function AdminAppointmentDialog({
     open,
     onOpenChange,
     onSubmit,
-}: AppointmentDialogProps) {
+}: AdminAppointmentDialogProps) {
     const {
         register,
         handleSubmit,
         formState: { errors },
         reset,
         watch,
-    } = useForm<AppointmentFormData>();
+    } = useForm<AdminAppointmentFormData>();
 
     const selectedSpecialty =
         watch("specialty");
@@ -97,7 +100,7 @@ export function AppointmentDialog({
         .split("T")[0];
 
     const handleFormSubmit = (
-        data: AppointmentFormData
+        data: AdminAppointmentFormData
     ) => {
         onSubmit(data);
         reset();
@@ -111,12 +114,11 @@ export function AppointmentDialog({
             <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
                 <div className="mb-6">
                     <h2 className="text-2xl font-semibold text-primary">
-                        Agendar Nova Consulta
+                        Agendar Consulta
                     </h2>
 
                     <p className="text-muted-foreground mt-1">
-                        Preencha os dados para agendar
-                        uma consulta
+                        Agende uma consulta para um paciente
                     </p>
                 </div>
 
@@ -126,6 +128,37 @@ export function AppointmentDialog({
                     )}
                     className="space-y-4"
                 >
+                    {/* Paciente */}
+                    <div className="space-y-2">
+                        <Label>Nome do Paciente</Label>
+
+                        <Input
+                            placeholder="Nome completo do paciente"
+                            {...register(
+                                "patientName",
+                                {
+                                    required:
+                                        "Nome do paciente obrigatório",
+                                }
+                            )}
+                            className={
+                                errors.patientName
+                                    ? "border-red-500"
+                                    : ""
+                            }
+                        />
+
+                        {errors.patientName && (
+                            <p className="text-sm text-red-500">
+                                {
+                                    errors
+                                        .patientName
+                                        .message
+                                }
+                            </p>
+                        )}
+                    </div>
+
                     {/* Data e Hora */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">

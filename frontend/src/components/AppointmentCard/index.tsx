@@ -68,7 +68,9 @@ export function AppointmentCard({
                             <h3 className="text-xl font-semibold text-primary">
                                 {userType === "patient"
                                     ? appointment.doctor
-                                    : appointment.patientName}
+                                    : userType === "admin"
+                                      ? appointment.patientName
+                                      : appointment.patientName}
                             </h3>
                         </div>
 
@@ -129,15 +131,16 @@ export function AppointmentCard({
                     </span>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-foreground">
-                    <User className="w-4 h-4" />
+                {userType === "admin" && (
+                    <div className="flex items-center gap-2 text-sm text-foreground">
+                        <User className="w-4 h-4" />
 
-                    <span>
-                        {userType === "patient"
-                            ? appointment.doctor
-                            : appointment.patientName}
-                    </span>
-                </div>
+                        <span>
+                            Médico:{" "}
+                            {appointment.doctor}
+                        </span>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

@@ -24,4 +24,5 @@ export type AppointmentStatus =
 
 export type UserType =
     | "patient"
-    | "doctor";
+    | "doctor"
+    | "admin";
