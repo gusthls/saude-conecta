@@ -38,11 +38,13 @@ export function ForgotPasswordForm({
 
         setLoading(true);
 
-        // Simulação API
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        const response = await fetch('http://localhost:3000/api/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        });
 
-        // Simulação de resposta da API
-        const success = true;
+        const success = response.ok;
 
         setLoading(false);
 
