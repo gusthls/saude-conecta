@@ -23,8 +23,6 @@ interface AdminAppointmentDialogProps {
 
 type Medic = { medic_id: number | string; name: string; specialty?: string };
 
-const DEFAULT_MEDICS_BY_SPECIALTY: Record<string, string[]> = {};
-
 // We'll fetch medics from the API and derive specialties
 
 // Função para gerar horários disponíveis (07h até 20h com intervalos de 30 minutos)
