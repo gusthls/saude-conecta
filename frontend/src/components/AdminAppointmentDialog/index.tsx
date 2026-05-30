@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 
 import { Button } from "../Button";
 import { Input } from "../Input";
@@ -21,34 +21,11 @@ interface AdminAppointmentDialogProps {
     ) => void;
 }
 
-// Mapeamento de médicos por especialidade
-const medicsBySpecialty: Record<string, string[]> =
-    {
-        Cardiologia: [
-            "Dr. João Silva",
-            "Dra. Ana Oliveira",
-        ],
-        Dermatologia: [
-            "Dra. Maria Santos",
-            "Dr. Pedro Costa",
-        ],
-        Ortopedia: [
-            "Dr. João Silva",
-            "Dr. Pedro Costa",
-        ],
-        Pediatria: [
-            "Dra. Maria Santos",
-            "Dra. Ana Oliveira",
-        ],
-        "Clínico Geral": [
-            "Dr. João Silva",
-            "Dra. Maria Santos",
-        ],
-    };
+type Medic = { medic_id: number | string; name: string; specialty?: string };
 
-const specialties = Object.keys(
-    medicsBySpecialty
-);
+const DEFAULT_MEDICS_BY_SPECIALTY: Record<string, string[]> = {};
+
+// We'll fetch medics from the API and derive specialties
 
 // Função para gerar horários disponíveis (07h até 20h com intervalos de 30 minutos)
 function generateAvailableTimes(): string[] {
@@ -66,6 +43,45 @@ export function AdminAppointmentDialog({
     onOpenChange,
     onSubmit,
 }: AdminAppointmentDialogProps) {
+    const [medics, setMedics] = useState<Medic[]>([]);
+
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/medics');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!mounted) return;
+                setMedics(
+                    data.map((m: any) => ({
+                        medic_id: m.medic_id ?? m.id ?? m.medic_id,
+                        name: m.name,
+                        specialty: m.specialty,
+                    }))
+                );
+            } catch (e) {
+                console.warn('Erro ao buscar médicos:', e);
+            }
+        })();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const medicsBySpecialty = useMemo(() => {
+        const map: Record<string, string[]> = {};
+        medics.forEach((m) => {
+            const spec = m.specialty || 'Outros';
+            if (!map[spec]) map[spec] = [];
+            if (m.name) map[spec].push(m.name);
+        });
+        return map;
+    }, [medics]);
+
+    const specialties = useMemo(() => Object.keys(medicsBySpecialty), [medicsBySpecialty]);
+
     const {
         register,
         handleSubmit,
