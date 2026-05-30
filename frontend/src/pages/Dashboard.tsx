@@ -25,18 +25,13 @@ import type { AdminAppointmentFormData } from "../components/AdminAppointmentDia
 
 interface DashboardProps {
     onLogout: () => void;
+    userType: UserType;
 }
 
 export function Dashboard({
     onLogout,
+    userType,
 }: DashboardProps) {
-    /*
-        ALTERE AQUI PARA TESTAR:
-        "patient"
-        "medic"
-        "admin"
-    */
-    const userType: UserType = "admin";
 
     const [dialogOpen, setDialogOpen] =
         useState(false);
