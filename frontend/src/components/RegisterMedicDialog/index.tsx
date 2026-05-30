@@ -16,25 +16,37 @@ interface RegisterMedicDialogProps {
     onOpenChange: (open: boolean) => void;
     onSubmit: (data: RegisterMedicFormData) => void;
 }
+import { useEffect, useState } from "react";
 
-const specialties = [
-    "Cardiologia",
-    "Dermatologia",
-    "Ortopedia",
-    "Pediatria",
-    "Clínico Geral",
-    "Psiquiatria",
-    "Neurologia",
-    "Oftalmologia",
-    "Gastroenterologia",
-    "Urologia",
-];
+const DEFAULT_SPECIALTIES: string[] = [];
 
 export function RegisterMedicDialog({
     open,
     onOpenChange,
     onSubmit,
 }: RegisterMedicDialogProps) {
+    const [specialties, setSpecialties] = useState<string[]>(DEFAULT_SPECIALTIES);
+
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/medics');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!mounted) return;
+                const rawSpecs = data.map((m: any) => m.specialty).filter(Boolean);
+                const specs = Array.from(new Set(rawSpecs)).map(String);
+                setSpecialties(specs as string[]);
+            } catch (e) {
+                console.warn('Erro ao carregar especialidades:', e);
+            }
+        })();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
     const {
         register,
         handleSubmit,
