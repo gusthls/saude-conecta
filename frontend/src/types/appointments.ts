@@ -2,7 +2,7 @@
 export interface Appointment {
     id: string;
     patientName: string;
-    doctor: string;
+    medic: string;
     specialty: string;
     date: string;
     time: string;
@@ -14,7 +14,7 @@ export interface AppointmentFormData {
     date: string;
     time: string;
     specialty: string;
-    doctor: string;
+    medic: string;
 }
 
 export type AppointmentStatus =
@@ -24,5 +24,5 @@ export type AppointmentStatus =
 
 export type UserType =
     | "patient"
-    | "doctor"
+    | "medic"
     | "admin";

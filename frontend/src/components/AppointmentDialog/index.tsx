@@ -9,7 +9,7 @@ export interface AppointmentFormData {
     date: string;
     time: string;
     specialty: string;
-    doctor: string;
+    medic: string;
 }
 
 interface AppointmentDialogProps {
@@ -267,7 +267,7 @@ export function AppointmentDialog({
                         <Label>Médico</Label>
 
                         <select
-                            {...register("doctor", {
+                            {...register("medic", {
                                 required:
                                     "Médico obrigatório",
                             })}
@@ -275,7 +275,7 @@ export function AppointmentDialog({
                                 !selectedSpecialty
                             }
                             className={`w-full h-10 rounded-md border px-3 bg-input-background disabled:opacity-50 disabled:cursor-not-allowed ${
-                                errors.doctor
+                                errors.medic
                                     ? "border-red-500"
                                     : "border-border"
                             }`}
@@ -298,10 +298,10 @@ export function AppointmentDialog({
                             )}
                         </select>
 
-                        {errors.doctor && (
+                        {errors.medic && (
                             <p className="text-sm text-red-500">
                                 {
-                                    errors.doctor
+                                    errors.medic
                                         .message
                                 }
                             </p>
