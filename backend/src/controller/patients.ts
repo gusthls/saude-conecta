@@ -78,7 +78,7 @@ export const updatePatient = async (req: Request, res: Response) => {
         SET name = COALESCE(@name, name),
             email = COALESCE(@email, email),
             phone = COALESCE(@phone, phone)
-        WHERE client_id = @id
+        WHERE patient_id = @id
       `)
 
     return res.status(200).json({

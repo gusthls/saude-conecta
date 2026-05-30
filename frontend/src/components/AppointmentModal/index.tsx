@@ -20,7 +20,7 @@ export function AppointmentModal({
         date: "",
         time: "",
         specialty: "",
-        doctor: "",
+        medic: "",
     });
 
     if (!open) return null;
@@ -44,7 +44,7 @@ export function AppointmentModal({
             date: "",
             time: "",
             specialty: "",
-            doctor: ""
+            medic: ""
         });
 
         onClose();
@@ -109,8 +109,8 @@ export function AppointmentModal({
                         <Label>Médico</Label>
 
                         <Input
-                            name="doctor"
-                            value={formData.doctor}
+                            name="medic"
+                            value={formData.medic}
                             onChange={handleChange}
                         />
                     </div>

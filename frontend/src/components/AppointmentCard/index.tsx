@@ -67,7 +67,7 @@ export function AppointmentCard({
 
                             <h3 className="text-xl font-semibold text-primary">
                                 {userType === "patient"
-                                    ? appointment.doctor
+                                    ? appointment.medic
                                     : userType === "admin"
                                       ? appointment.patientName
                                       : appointment.patientName}
@@ -137,7 +137,7 @@ export function AppointmentCard({
 
                         <span>
                             Médico:{" "}
-                            {appointment.doctor}
+                            {appointment.medic}
                         </span>
                     </div>
                 )}

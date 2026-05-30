@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { Eye, EyeOff, Stethoscope } from "lucide-react";
 import { useState } from "react";
+import type { UserType } from "../types/appointments";
 
 interface LoginFormData {
   email: string;
@@ -21,7 +22,7 @@ interface LoginFormData {
 interface LoginFormProps {
   onSwitchToRegister: () => void;
   onSwitchToForgotPassword: () => void;
-  onLogin: () => void;
+  onLogin: (userType: UserType) => void;
 }
 
 export function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword, onLogin }: LoginFormProps) {
@@ -47,7 +48,20 @@ export function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword, onLogi
       if (res.ok) {
         toast.success(result.message);
         reset();
-        onLogin();
+        // salva sessão no localStorage por 3600 segundos
+        try {
+          const session = {
+            expires: Date.now() + 3600 * 1000,
+            userType: result.userType as UserType,
+            user: result.user || null,
+          };
+
+          localStorage.setItem('session', JSON.stringify(session));
+        } catch (e) {
+          console.warn('Não foi possível salvar sessão:', e);
+        }
+
+        onLogin(result.userType as UserType);
       } else {
         toast.error(result.message);
       }

@@ -29,7 +29,7 @@ const initialUsers: UserItem[] = [
         id: "u2",
         name: "Dr. João Silva",
         email: "joao@clinica.com",
-        role: "doctor",
+        role: "medic",
         active: true,
         phone: "(11) 22222-2222",
         cpf: "222.222.222-22",
@@ -83,7 +83,7 @@ export function UsersList() {
                     >
                         <option value="all">Todos</option>
                         <option value="patient">Paciente</option>
-                        <option value="doctor">Médico</option>
+                        <option value="medic">Médico</option>
                         <option value="admin">Administrador</option>
                     </select>
                 </div>

@@ -20,9 +20,9 @@ export const getAppointments = async (req: Request, res: Response) => {
 
 
 export const createAppointment = async (req: Request, res: Response) => {
-  const { client_id, medic_id, appointment_date, appointment_time, status_id } = req.body
+  const { patient_id, medic_id, appointment_date, appointment_time, status_id } = req.body
 
-  if (!client_id || !medic_id || !appointment_date || !appointment_time || !status_id) {
+  if (!patient_id || !medic_id || !appointment_date || !appointment_time || !status_id) {
     return res.status(400).json({
       message: "Campos obrigatórios não preenchidos"
     })
@@ -30,16 +30,16 @@ export const createAppointment = async (req: Request, res: Response) => {
 
   try {
     await pool.request()
-      .input("client_id", client_id)
+      .input("patient_id", patient_id)
       .input("medic_id", medic_id)
       .input("appointment_date", appointment_date)
       .input("appointment_time", appointment_time)
       .input("status_id", status_id)
       .query(`
         INSERT INTO scheduled_appointments 
-        (client_id, medic_id, appointment_date, appointment_time, status_id)
+        (patient_id, medic_id, appointment_date, appointment_time, status_id)
         VALUES 
-        (@client_id, @medic_id, @appointment_date, @appointment_time, @status_id)
+        (@patient_id, @medic_id, @appointment_date, @appointment_time, @status_id)
       `)
 
     return res.status(201).json({
@@ -107,9 +107,9 @@ export const getCompletedAppointments = async (req: Request, res: Response) => {
 }
 
 export const createCompletedAppointment = async (req: Request, res: Response) => {
-  const { client_id, medic_id, appointment_date, appointment_time, notes, status_id } = req.body
+  const { patient_id, medic_id, appointment_date, appointment_time, notes, status_id } = req.body
 
-  if (!client_id || !medic_id || !appointment_date || !appointment_time || !status_id) {
+  if (!patient_id || !medic_id || !appointment_date || !appointment_time || !status_id) {
     return res.status(400).json({
       message: "Campos obrigatórios não preenchidos"
     })
@@ -117,7 +117,7 @@ export const createCompletedAppointment = async (req: Request, res: Response) =>
 
   try {
     await pool.request()
-      .input("client_id", client_id)
+      .input("patient_id", patient_id)
       .input("medic_id", medic_id)
       .input("appointment_date", appointment_date)
       .input("appointment_time", appointment_time)
@@ -125,9 +125,9 @@ export const createCompletedAppointment = async (req: Request, res: Response) =>
       .input("status_id", status_id)
       .query(`
         INSERT INTO completed_appointments
-        (client_id, medic_id, appointment_date, appointment_time, notes, status_id)
+        (patient_id, medic_id, appointment_date, appointment_time, notes, status_id)
         VALUES
-        (@client_id, @medic_id, @appointment_date, @appointment_time, @notes, @status_id)
+        (@patient_id, @medic_id, @appointment_date, @appointment_time, @notes, @status_id)
       `)
 
     return res.status(201).json({

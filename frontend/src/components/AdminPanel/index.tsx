@@ -52,7 +52,7 @@ export function AdminPanel({
         new Set(
             appointments.map(
                 (appointment) =>
-                    appointment.doctor
+                    appointment.medic
             )
         )
     );
@@ -70,7 +70,7 @@ export function AdminPanel({
     const filteredAppointments = appointments.filter(
         (appointment) => {
             const matchesDoctor =
-                !filterByDoctor || appointment.doctor === filterByDoctor;
+                !filterByDoctor || appointment.medic === filterByDoctor;
             const matchesSpecialty =
                 !filterBySpecialty || appointment.specialty === filterBySpecialty;
             const matchesStatus =
@@ -291,12 +291,12 @@ export function AdminPanel({
                                     Todos os médicos
                                 </option>
                                 {uniqueDoctors.map(
-                                    (doctor) => (
+                                    (medic) => (
                                         <option
-                                            key={doctor}
-                                            value={doctor}
+                                            key={medic}
+                                            value={medic}
                                         >
-                                            {doctor}
+                                            {medic}
                                         </option>
                                     )
                                 )}

@@ -25,18 +25,13 @@ import type { AdminAppointmentFormData } from "../components/AdminAppointmentDia
 
 interface DashboardProps {
     onLogout: () => void;
+    userType: UserType;
 }
 
 export function Dashboard({
     onLogout,
+    userType,
 }: DashboardProps) {
-    /*
-        ALTERE AQUI PARA TESTAR:
-        "patient"
-        "doctor"
-        "admin"
-    */
-    const userType: UserType = "admin";
 
     const [dialogOpen, setDialogOpen] =
         useState(false);
@@ -54,7 +49,7 @@ export function Dashboard({
             {
                 id: "1",
                 patientName: "Maria Santos",
-                doctor: "Dr. João Silva",
+                medic: "Dr. João Silva",
                 specialty: "Cardiologia",
                 date: "2026-05-25",
                 time: "10:00",
@@ -64,7 +59,7 @@ export function Dashboard({
             {
                 id: "2",
                 patientName: "Carlos Oliveira",
-                doctor: "Dra. Ana Costa",
+                medic: "Dra. Ana Costa",
                 specialty: "Dermatologia",
                 date: "2026-05-20",
                 time: "14:30",
@@ -74,7 +69,7 @@ export function Dashboard({
             {
                 id: "3",
                 patientName: "Fernanda Lima",
-                doctor: "Dr. João Silva",
+                medic: "Dr. João Silva",
                 specialty: "Cardiologia",
                 date: "2026-05-18",
                 time: "09:00",
@@ -350,7 +345,7 @@ export function Dashboard({
                                 />
 
                                 {userType ===
-                                    "doctor" &&
+                                    "medic" &&
                                     appointment.status ===
                                         "scheduled" && (
                                         <Button
