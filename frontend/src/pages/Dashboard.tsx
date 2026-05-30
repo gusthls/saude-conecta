@@ -166,22 +166,14 @@ export function Dashboard({
                 "cancelled"
         );
 
+    // Filtrar por status quando selecionado
     const filteredAppointments =
         activeFilter === "all"
             ? appointments
-            : [
-                  ...appointments.filter(
-                      (appointment) =>
-                          appointment.status ===
-                          activeFilter
-                  ),
-
-                  ...appointments.filter(
-                      (appointment) =>
-                          appointment.status !==
-                          activeFilter
-                  ),
-              ];
+            : appointments.filter(
+                  (appointment) =>
+                      appointment.status === activeFilter
+              );
 
     // Renderizar a interface do Admin
     if (userType === "admin") {
