@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { UserType } from "./types/appointments";
 
 import { AuthPage } from "./pages/AuthPage";
 import { LoginForm } from "./pages/LoginForm";
@@ -17,6 +18,8 @@ function App() {
     // controla se está logado
     const [isLoggedIn, setIsLoggedIn] =
         useState(false);
+
+    const [userType, setUserType] = useState<UserType | null>(null);
 
     // controla qual tela auth aparece
     const [currentView, setCurrentView] =
@@ -37,17 +40,44 @@ function App() {
             : "Digite seu email para recuperar sua senha";
 
     // login
-    function handleLogin() {
+    function handleLogin(type?: UserType) {
         setIsLoggedIn(true);
+        if (type) setUserType(type);
     }
 
     // logout
-    function handleLogout() {
-        setIsLoggedIn(false);
+        function handleLogout() {
+                setIsLoggedIn(false);
+                setUserType(null);
 
-        // volta pro login
-        setCurrentView("login");
-    }
+                // remove sessão
+                try {
+                    localStorage.removeItem('session');
+                } catch (e) {
+                    console.warn('Erro ao limpar sessão', e);
+                }
+
+                // volta pro login
+                setCurrentView("login");
+        }
+
+        // restaura sessão ao carregar a aplicação
+        useEffect(() => {
+            try {
+                const raw = localStorage.getItem('session');
+                if (!raw) return;
+
+                const session = JSON.parse(raw);
+                if (session && session.expires && session.expires > Date.now()) {
+                    setIsLoggedIn(true);
+                    setUserType(session.userType as UserType);
+                } else {
+                    localStorage.removeItem('session');
+                }
+            } catch (e) {
+                console.warn('Erro ao restaurar sessão:', e);
+            }
+        }, []);
 
     // se estiver logado mostra dashboard
     if (isLoggedIn) {
@@ -55,6 +85,7 @@ function App() {
             <>
                 <Dashboard
                     onLogout={handleLogout}
+                    userType={userType ?? "patient"}
                 />
 
                 <Toaster />
@@ -70,7 +101,7 @@ function App() {
                 description={description}
             >
                 {currentView === "login" && (
-                    <LoginForm
+                        <LoginForm
                         onSwitchToRegister={() =>
                             setCurrentView(
                                 "register"
@@ -81,7 +112,7 @@ function App() {
                                 "forgot-password"
                             )
                         }
-                        onLogin={handleLogin}
+                        onLogin={(type) => handleLogin(type)}
                     />
                 )}
 
