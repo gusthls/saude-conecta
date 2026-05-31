@@ -138,14 +138,11 @@ export function AppointmentDialog({
                 return;
             }
 
-            // Combinar data e hora em ISO format
-            const scheduledAt = `${data.date}T${data.time}`;
-
-            // Enviar POST para criar consulta
+            // Enviar POST para criar consulta: enviar `scheduled_at` apenas com a data (YYYY-MM-DD)
             const payload = {
                 patient_id: patientId,
                 medic_id: selectedMedic.medic_id,
-                scheduled_at: scheduledAt,
+                scheduled_at: data.date,
                 appointment_time: data.time,
             };
 
