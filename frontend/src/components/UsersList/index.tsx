@@ -13,6 +13,7 @@ interface UserItem {
     active: boolean;
     phone?: string;
     cpf?: string;
+    backendId?: string;
 }
 
 export function UsersList() {
@@ -47,7 +48,8 @@ export function UsersList() {
 
                 const normalizedUsers: UserItem[] = [
                     ...patientsData.map((user: any) => ({
-                        id: String(user.id),
+                        id: `patient-${user.id}`,
+                        backendId: String(user.id),
                         name: user.name,
                         email: user.email,
                         role: 'patient' as UserType,
@@ -56,7 +58,8 @@ export function UsersList() {
                         cpf: user.cpf,
                     })),
                     ...medicsData.map((user: any) => ({
-                        id: String(user.id),
+                        id: `medic-${user.id}`,
+                        backendId: String(user.id),
                         name: user.name,
                         email: user.email,
                         role: 'medic' as UserType,
@@ -65,7 +68,8 @@ export function UsersList() {
                         cpf: user.cpf,
                     })),
                     ...adminsData.map((user: any) => ({
-                        id: String(user.id),
+                        id: `admin-${user.id}`,
+                        backendId: String(user.id),
                         name: user.name,
                         email: user.email,
                         role: 'admin' as UserType,
@@ -87,24 +91,25 @@ export function UsersList() {
         loadUsers();
     }, []);
 
-    const toggleActive = async (id: string) => {
-        const user = users.find((u) => u.id === id);
+    const toggleActive = async (compositeId: string) => {
+        const user = users.find((u) => u.id === compositeId);
         if (!user) {
             return;
         }
 
         const nextActive = !user.active;
+        const backendId = user.backendId ?? compositeId;
         let endpoint = '';
 
         switch (user.role) {
             case 'patient':
-                endpoint = `/api/patients/${id}`;
+                endpoint = `/api/patients/${backendId}`;
                 break;
             case 'medic':
-                endpoint = `/api/medics/${id}`;
+                endpoint = `/api/medics/${backendId}`;
                 break;
             case 'admin':
-                endpoint = `/api/admins/${id}`;
+                endpoint = `/api/admins/${backendId}`;
                 break;
             default:
                 console.warn('Tipo de usuário não suportado para toggle:', user.role);
@@ -125,7 +130,7 @@ export function UsersList() {
 
             setUsers((prev) =>
                 prev.map((u) =>
-                    u.id === id
+                    u.id === compositeId
                         ? { ...u, active: nextActive }
                         : u
                 )
