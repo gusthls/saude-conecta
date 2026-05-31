@@ -20,9 +20,9 @@ export const getPatients = async (req: Request, res: Response) => {
 
 
 export const createPatient = async (req: Request, res: Response) => {
-  const { name, cpf, email, phone, password, status } = req.body
+  const { name, cpf, email, phone, password, active } = req.body
 
-  if (!name || !cpf || !email || !password || !status) {
+  if (!name || !cpf || !email || !password || !active) {
     return res.status(400).json({
       message: "Campos obrigatórios não preenchidos"
     })
@@ -37,10 +37,10 @@ export const createPatient = async (req: Request, res: Response) => {
     .input("password", password)
     .input("created_at", now)
     .input("updated_at", now)
-    .input("status", status)
+    .input("active", active)
     .query(`
-      INSERT INTO patients (name, cpf, email, phone, password, created_at, updated_at, status)
-      VALUES (@name, @cpf, @email, @phone, @password, @created_at, @updated_at, @status)
+      INSERT INTO patients (name, cpf, email, phone, password, created_at, updated_at, active)
+      VALUES (@name, @cpf, @email, @phone, @password, @created_at, @updated_at, @active)
     `);
 
     return res.status(201).json({
