@@ -9,10 +9,15 @@ export const login = async (req: Request, res: Response) => {
     const patientResult = await pool
       .request()
       .input('email', email)
-      .query('SELECT id, email, password, name FROM patients WHERE email = @email');
+      .query('SELECT id, email, password, name, active FROM patients WHERE email = @email');
 
     if (patientResult.recordset.length > 0) {
       const user = patientResult.recordset[0];
+
+      // Verifica se o usuário está ativo
+      if (user.active === 0) {
+        return res.status(403).json({ message: 'SEU USUÁRIO NÃO É CAPAZ DE REALIZAR O LOGIN, CONTATE O SUPORTE' });
+      }
 
       if (user.password !== password) {
         return res.status(401).json({ message: 'Senha incorreta' });
@@ -29,13 +34,18 @@ export const login = async (req: Request, res: Response) => {
     const agentResult = await pool
       .request()
       .input('email', email)
-      .query('SELECT id, email, password, agent_type FROM agents WHERE email = @email');
+      .query('SELECT id, email, password, agent_type, active FROM agents WHERE email = @email');
 
     if (agentResult.recordset.length === 0) {
       return res.status(401).json({ message: 'Email não encontrado' });
     }
 
     const agent = agentResult.recordset[0];
+
+    // Verifica se o agente está ativo
+    if (agent.active === 0) {
+      return res.status(403).json({ message: 'SEU USUÁRIO NÃO É CAPAZ DE REALIZAR O LOGIN, CONTATE O SUPORTE' });
+    }
 
     if (agent.password !== password) {
       return res.status(401).json({ message: 'Senha incorreta' });
