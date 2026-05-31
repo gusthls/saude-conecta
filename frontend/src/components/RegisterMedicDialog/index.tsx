@@ -5,9 +5,10 @@ import { Label } from "../Label";
 
 interface RegisterMedicFormData {
     name: string;
-    specialty: string;
+    specialty_id: string;
     email: string;
     phone: string;
+    cpf: string;
     crm: string;
 }
 
@@ -18,14 +19,16 @@ interface RegisterMedicDialogProps {
 }
 import { useEffect, useState } from "react";
 
-const DEFAULT_SPECIALTIES: string[] = [];
+type Specialty = { id: number; name: string };
+
+const DEFAULT_SPECIALTIES: Specialty[] = [];
 
 export function RegisterMedicDialog({
     open,
     onOpenChange,
     onSubmit,
 }: RegisterMedicDialogProps) {
-    const [specialties, setSpecialties] = useState<string[]>(DEFAULT_SPECIALTIES);
+    const [specialties, setSpecialties] = useState<Specialty[]>(DEFAULT_SPECIALTIES);
 
     useEffect(() => {
         let mounted = true;
@@ -36,8 +39,8 @@ export function RegisterMedicDialog({
                 const data = await res.json();
                 if (!mounted) return;
                 const specs = (data as any[])
-                    .map((spec) => String(spec.name))
-                    .filter(Boolean);
+                    .map((spec) => ({ id: spec.id, name: String(spec.name) }))
+                    .filter((spec) => spec.name);
                 setSpecialties(specs);
             } catch (e) {
                 console.warn('Erro ao carregar especialidades:', e);
@@ -123,14 +126,14 @@ export function RegisterMedicDialog({
 
                         <select
                             {...register(
-                                "specialty",
+                                "specialty_id",
                                 {
                                     required:
                                         "Especialidade obrigatória",
                                 }
                             )}
                             className={`w-full h-10 rounded-md border px-3 bg-input-background ${
-                                errors.specialty
+                                errors.specialty_id
                                     ? "border-red-500"
                                     : "border-border"
                             }`}
@@ -142,22 +145,51 @@ export function RegisterMedicDialog({
                             {specialties.map(
                                 (spec) => (
                                     <option
-                                        key={spec}
-                                        value={spec}
+                                        key={spec.id}
+                                        value={String(spec.id)}
                                     >
-                                        {spec}
+                                        {spec.name}
                                     </option>
                                 )
                             )}
                         </select>
 
-                        {errors.specialty && (
+                        {errors.specialty_id && (
                             <p className="text-sm text-red-500">
                                 {
                                     errors
-                                        .specialty
+                                        .specialty_id
                                         .message
                                 }
+                            </p>
+                        )}
+                    </div>
+
+                    {/* CPF */}
+                    <div className="space-y-2">
+                        <Label>CPF</Label>
+
+                        <Input
+                            placeholder="000.000.000-00"
+                            {...register("cpf", {
+                                required:
+                                    "CPF obrigatório",
+                                pattern: {
+                                    value: /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
+                                    message:
+                                        "Cpf inválido",
+                                },
+                            })}
+                            className={
+                                errors.cpf
+                                    ? "border-red-500"
+                                    : ""
+                            }
+                        />
+
+                        {errors.cpf && (
+                            <p className="text-sm text-red-500">
+                                {errors.cpf.message}
                             </p>
                         )}
                     </div>
