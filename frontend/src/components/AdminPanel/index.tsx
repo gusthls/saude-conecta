@@ -93,15 +93,39 @@ export function AdminPanel({
             (a) => a.status === "cancelled"
         ).length;
 
-    const handleRegisterMedic = (data: {
+    const handleRegisterMedic = async (data: {
         name: string;
-        specialty: string;
+        specialty_id: string;
         email: string;
         phone: string;
+        cpf: string;
         crm: string;
     }) => {
-        console.log("Novo médico registrado:", data);
-        setMedicDialogOpen(false);
+        try {
+            const res = await fetch('http://localhost:3000/api/medics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: data.name,
+                    cpf: data.cpf,
+                    email: data.email,
+                    phone: data.phone,
+                    password: 'S@udeC0necta',
+                    crm: data.crm,
+                    specialty_id: Number(data.specialty_id),
+                }),
+            });
+
+            if (!res.ok) {
+                const message = await res.text();
+                console.error('Falha ao cadastrar médico:', res.status, message);
+                return;
+            }
+
+            setMedicDialogOpen(false);
+        } catch (error) {
+            console.error('Erro ao cadastrar médico:', error);
+        }
     };
 
     const handleAdminCreateAppointment = (
