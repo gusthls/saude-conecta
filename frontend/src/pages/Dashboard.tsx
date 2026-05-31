@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import {
     CheckCircle,
@@ -45,37 +45,9 @@ export function Dashboard({
         >("all");
 
     const [appointments, setAppointments] =
-        useState<Appointment[]>([
-            {
-                id: "1",
-                patientName: "Maria Santos",
-                medic: "Dr. João Silva",
-                specialty: "Cardiologia",
-                date: "2026-05-25",
-                time: "10:00",
-                status: "scheduled",
-            },
+        useState<Appointment[]>([]);
 
-            {
-                id: "2",
-                patientName: "Carlos Oliveira",
-                medic: "Dra. Ana Costa",
-                specialty: "Dermatologia",
-                date: "2026-05-20",
-                time: "14:30",
-                status: "completed",
-            },
-
-            {
-                id: "3",
-                patientName: "Fernanda Lima",
-                medic: "Dr. João Silva",
-                specialty: "Cardiologia",
-                date: "2026-05-18",
-                time: "09:00",
-                status: "cancelled",
-            },
-        ]);
+    // loading state currently unused; keep if needed later
 
     const handleCreateAppointment = (
         data: AppointmentFormData
@@ -92,6 +64,66 @@ export function Dashboard({
             ...appointments,
         ]);
     };
+
+    // Carregar consultas da API conforme userType
+    useEffect(() => {
+        const load = async () => {
+            // start loading
+
+            try {
+                const raw = localStorage.getItem('session');
+                let medicId: string | undefined;
+                let patientId: string | undefined;
+                if (raw) {
+                    const s = JSON.parse(raw);
+                    if (s.userType === 'medic') medicId = s.user?.id;
+                    if (s.userType === 'patient') patientId = s.user?.id;
+                }
+
+                const params = new URLSearchParams();
+                if (medicId) params.set('medicId', String(medicId));
+                if (patientId) params.set('patientId', String(patientId));
+
+                const scheduledRes = await fetch(
+                    `http://localhost:3000/api/appointments${params.toString() ? `?${params.toString()}` : ''}`
+                );
+                const scheduled = scheduledRes.ok ? await scheduledRes.json() : [];
+
+                const completedRes = await fetch(
+                    `http://localhost:3000/api/appointments/completed${params.toString() ? `?${params.toString()}` : ''}`
+                );
+                const completed = completedRes.ok ? await completedRes.json() : [];
+
+                // Combine and set
+                setAppointments([
+                    ...scheduled.map((a: any) => ({
+                        id: String(a.id),
+                        patientName: a.patientName || '',
+                        medic: a.medic || '',
+                        specialty: a.specialty || '',
+                        date: a.date || '',
+                        time: a.time || '',
+                        status: 'scheduled' as const,
+                    })),
+                    ...completed.map((a: any) => ({
+                        id: String(a.id),
+                        patientName: a.patientName || '',
+                        medic: a.medic || '',
+                        specialty: a.specialty || '',
+                        date: a.date || '',
+                        time: a.time || '',
+                        status: 'completed' as const,
+                    })),
+                ]);
+            } catch (e) {
+                console.error('Erro ao carregar consultas:', e);
+            } finally {
+                // finished loading
+            }
+        };
+
+        load();
+    }, []);
 
     const handleAdminCreateAppointment = (
         data: AdminAppointmentFormData

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Users, Edit2 } from "lucide-react";
 
 import { Button } from "../Button";
@@ -13,49 +13,134 @@ interface UserItem {
     active: boolean;
     phone?: string;
     cpf?: string;
+    backendId?: string;
 }
 
-const initialUsers: UserItem[] = [
-    {
-        id: "u1",
-        name: "Admin Principal",
-        email: "admin@exemplo.com",
-        role: "admin",
-        active: true,
-        phone: "(11) 11111-1111",
-        cpf: "111.111.111-11",
-    },
-    {
-        id: "u2",
-        name: "Dr. João Silva",
-        email: "joao@clinica.com",
-        role: "medic",
-        active: true,
-        phone: "(11) 22222-2222",
-        cpf: "222.222.222-22",
-    },
-    {
-        id: "u3",
-        name: "Maria Paciente",
-        email: "maria@cliente.com",
-        role: "patient",
-        active: false,
-        phone: "(11) 33333-3333",
-        cpf: "333.333.333-33",
-    },
-];
-
 export function UsersList() {
-    const [users, setUsers] = useState<UserItem[]>(initialUsers);
+    const [users, setUsers] = useState<UserItem[]>([]);
     const [roleFilter, setRoleFilter] = useState<"all" | UserType>("all");
     const [editingUser, setEditingUser] = useState<UserItem | null>(null);
     const [confirmToggleUser, setConfirmToggleUser] = useState<UserItem | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const toggleActive = (id: string) => {
-        setUsers((prev) =>
-            prev.map((u) => (u.id === id ? { ...u, active: !u.active } : u))
-        );
-        setConfirmToggleUser(null);
+    useEffect(() => {
+        const loadUsers = async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const [patientsRes, medicsRes, adminsRes] = await Promise.all([
+                    fetch('http://localhost:3000/api/patients'),
+                    fetch('http://localhost:3000/api/medics'),
+                    fetch('http://localhost:3000/api/admins'),
+                ]);
+
+                if (!patientsRes.ok || !medicsRes.ok || !adminsRes.ok) {
+                    throw new Error('Falha ao carregar usuários');
+                }
+
+                const [patientsData, medicsData, adminsData] = await Promise.all([
+                    patientsRes.json(),
+                    medicsRes.json(),
+                    adminsRes.json(),
+                ]);
+
+                const normalizedUsers: UserItem[] = [
+                    ...patientsData.map((user: any) => ({
+                        id: `patient-${user.id}`,
+                        backendId: String(user.id),
+                        name: user.name,
+                        email: user.email,
+                        role: 'patient' as UserType,
+                        active: user.active !== undefined ? Boolean(user.active) : true,
+                        phone: user.phone,
+                        cpf: user.cpf,
+                    })),
+                    ...medicsData.map((user: any) => ({
+                        id: `medic-${user.id}`,
+                        backendId: String(user.id),
+                        name: user.name,
+                        email: user.email,
+                        role: 'medic' as UserType,
+                        active: user.active !== undefined ? Boolean(user.active) : true,
+                        phone: user.phone,
+                        cpf: user.cpf,
+                    })),
+                    ...adminsData.map((user: any) => ({
+                        id: `admin-${user.id}`,
+                        backendId: String(user.id),
+                        name: user.name,
+                        email: user.email,
+                        role: 'admin' as UserType,
+                        active: user.active !== undefined ? Boolean(user.active) : true,
+                        phone: user.phone,
+                        cpf: user.cpf,
+                    })),
+                ];
+
+                setUsers(normalizedUsers);
+            } catch (fetchError) {
+                console.error(fetchError);
+                setError('Não foi possível carregar os usuários');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadUsers();
+    }, []);
+
+    const toggleActive = async (compositeId: string) => {
+        const user = users.find((u) => u.id === compositeId);
+        if (!user) {
+            return;
+        }
+
+        const nextActive = !user.active;
+        const backendId = user.backendId ?? compositeId;
+        let endpoint = '';
+
+        switch (user.role) {
+            case 'patient':
+                endpoint = `/api/patients/${backendId}`;
+                break;
+            case 'medic':
+                endpoint = `/api/medics/${backendId}`;
+                break;
+            case 'admin':
+                endpoint = `/api/admins/${backendId}`;
+                break;
+            default:
+                console.warn('Tipo de usuário não suportado para toggle:', user.role);
+                setConfirmToggleUser(null);
+                return;
+        }
+
+        try {
+            const res = await fetch(`http://localhost:3000${endpoint}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: nextActive }),
+            });
+
+            if (!res.ok) {
+                throw new Error('Erro ao atualizar status do usuário');
+            }
+
+            setUsers((prev) =>
+                prev.map((u) =>
+                    u.id === compositeId
+                        ? { ...u, active: nextActive }
+                        : u
+                )
+            );
+        } catch (patchError) {
+            console.error(patchError);
+            setError('Não foi possível atualizar o status do usuário');
+        } finally {
+            setConfirmToggleUser(null);
+        }
     };
 
     // criação de usuários removida — gerenciamento via backend recomendado
@@ -89,7 +174,11 @@ export function UsersList() {
                 </div>
             </div>
 
-            {users.filter((u) => roleFilter === "all" || u.role === roleFilter).length === 0 ? (
+            {loading ? (
+                <div className="text-center py-12 text-muted-foreground">Carregando usuários...</div>
+            ) : error ? (
+                <div className="text-center py-12 text-red-600">{error}</div>
+            ) : users.filter((u) => roleFilter === "all" || u.role === roleFilter).length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">Nenhum usuário encontrado</div>
             ) : (
                 <div className="space-y-3">

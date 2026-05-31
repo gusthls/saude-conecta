@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 
 import { Button } from "../Button";
 import { Input } from "../Input";
@@ -21,34 +21,9 @@ interface AdminAppointmentDialogProps {
     ) => void;
 }
 
-// Mapeamento de médicos por especialidade
-const medicsBySpecialty: Record<string, string[]> =
-    {
-        Cardiologia: [
-            "Dr. João Silva",
-            "Dra. Ana Oliveira",
-        ],
-        Dermatologia: [
-            "Dra. Maria Santos",
-            "Dr. Pedro Costa",
-        ],
-        Ortopedia: [
-            "Dr. João Silva",
-            "Dr. Pedro Costa",
-        ],
-        Pediatria: [
-            "Dra. Maria Santos",
-            "Dra. Ana Oliveira",
-        ],
-        "Clínico Geral": [
-            "Dr. João Silva",
-            "Dra. Maria Santos",
-        ],
-    };
+type Medic = { medic_id: number | string; name: string; specialty_id?: number; };
 
-const specialties = Object.keys(
-    medicsBySpecialty
-);
+// We'll fetch medics from the API and derive specialties
 
 // Função para gerar horários disponíveis (07h até 20h com intervalos de 30 minutos)
 function generateAvailableTimes(): string[] {
@@ -66,6 +41,52 @@ export function AdminAppointmentDialog({
     onOpenChange,
     onSubmit,
 }: AdminAppointmentDialogProps) {
+    const [specialties, setSpecialties] = useState<{ id: number; name: string }[]>([]);
+    const [medics, setMedics] = useState<Medic[]>([]);
+
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                // Buscar especialidades
+                const specsRes = await fetch('http://localhost:3000/api/specialties');
+                if (!specsRes.ok) return;
+                const specsData = await specsRes.json();
+                if (!mounted) return;
+                setSpecialties(specsData);
+
+                // Buscar médicos
+                const medicsRes = await fetch('http://localhost:3000/api/medics');
+                if (!medicsRes.ok) return;
+                const medicsData = await medicsRes.json();
+                if (!mounted) return;
+                setMedics(
+                    medicsData.map((m: any) => ({
+                        medic_id: m.id || m.medic_id,
+                        name: m.name,
+                        specialty_id: m.specialty_id,
+                    }))
+                );
+            } catch (e) {
+                console.warn('Erro ao buscar dados:', e);
+            }
+        })();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const medicsBySpecialty = useMemo(() => {
+        const map: Record<number, string[]> = {};
+        medics.forEach((m) => {
+            if (!m.specialty_id) return;
+            if (!map[m.specialty_id]) map[m.specialty_id] = [];
+            if (m.name) map[m.specialty_id].push(m.name);
+        });
+        return map;
+    }, [medics]);
+
     const {
         register,
         handleSubmit,
@@ -74,7 +95,7 @@ export function AdminAppointmentDialog({
         watch,
     } = useForm<AdminAppointmentFormData>();
 
-    const selectedSpecialty =
+    const selectedSpecialtyId =
         watch("specialty");
 
     const availableTimes = useMemo(
@@ -83,15 +104,12 @@ export function AdminAppointmentDialog({
     );
 
     const filteredDoctors = useMemo(() => {
-        if (!selectedSpecialty) {
+        if (!selectedSpecialtyId) {
             return [];
         }
-        return (
-            medicsBySpecialty[
-                selectedSpecialty
-            ] || []
-        );
-    }, [selectedSpecialty]);
+        const specId = parseInt(selectedSpecialtyId, 10);
+        return medicsBySpecialty[specId] || [];
+    }, [selectedSpecialtyId, medicsBySpecialty]);
 
     // Obter a data mínima (hoje)
     const today = new Date();
@@ -99,12 +117,69 @@ export function AdminAppointmentDialog({
         .toISOString()
         .split("T")[0];
 
-    const handleFormSubmit = (
+    const handleFormSubmit = async (
         data: AdminAppointmentFormData
     ) => {
-        onSubmit(data);
-        reset();
-        onOpenChange(false);
+        try {
+            // Buscar médico pelo nome
+            const selectedMedic = medics.find(m => m.name === data.medic);
+            if (!selectedMedic) {
+                console.error('Médico não encontrado');
+                return;
+            }
+
+            // Buscar patient_id pelo nome (buscar na API)
+            const patientsRes = await fetch('http://localhost:3000/api/patients');
+            if (!patientsRes.ok) {
+                console.error('Erro ao buscar pacientes');
+                return;
+            }
+            const patients = await patientsRes.json();
+            const selectedPatient = patients.find((p: any) => p.name === data.patientName);
+            
+            if (!selectedPatient) {
+                console.error('Paciente não encontrado');
+                return;
+            }
+
+            // Combinar data e hora em ISO format
+            const scheduledAt = `${data.date}T${data.time}`;
+
+            // Enviar POST para criar consulta
+            const payload = {
+                patient_id: selectedPatient.id,
+                medic_id: selectedMedic.medic_id,
+                scheduled_at: scheduledAt,
+                appointment_time: data.time,
+            };
+
+            console.debug('Admin criando consulta, payload:', payload);
+
+            const res = await fetch('http://localhost:3000/api/appointments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                let bodyText: string | null = null;
+                try {
+                    bodyText = await res.text();
+                } catch (e) {
+                    /* ignore */
+                }
+                console.error('Erro ao criar consulta', res.status, bodyText);
+                return;
+            }
+
+            // Chamar callback local — ajustar specialty para enviar o nome, não o id
+            const specialtyName = specialties.find(s => String(s.id) === data.specialty)?.name || data.specialty;
+            onSubmit({ ...data, specialty: specialtyName });
+            reset();
+            onOpenChange(false);
+        } catch (e) {
+            console.error('Erro ao agendar consulta:', e);
+        }
     };
 
     if (!open) return null;
@@ -275,10 +350,10 @@ export function AdminAppointmentDialog({
                             {specialties.map(
                                 (spec) => (
                                     <option
-                                        key={spec}
-                                        value={spec}
+                                        key={spec.id}
+                                        value={String(spec.id)}
                                     >
-                                        {spec}
+                                        {spec.name}
                                     </option>
                                 )
                             )}
@@ -305,7 +380,7 @@ export function AdminAppointmentDialog({
                                     "Médico obrigatório",
                             })}
                             disabled={
-                                !selectedSpecialty
+                                !selectedSpecialtyId
                             }
                             className={`w-full h-10 rounded-md border px-3 bg-input-background disabled:opacity-50 disabled:cursor-not-allowed ${
                                 errors.medic
@@ -314,7 +389,7 @@ export function AdminAppointmentDialog({
                             }`}
                         >
                             <option value="">
-                                {selectedSpecialty
+                                {selectedSpecialtyId
                                     ? "Selecione"
                                     : "Selecione uma especialidade primeiro"}
                             </option>
