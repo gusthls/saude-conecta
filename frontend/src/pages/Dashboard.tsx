@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 import {
     CheckCircle,
@@ -153,9 +154,13 @@ export function Dashboard({
                             : appointment
                     )
                 );
+                toast.success('Consulta cancelada com sucesso');
+            } else {
+                toast.error('Erro ao cancelar consulta');
             }
         } catch (e) {
             console.error('Erro ao cancelar consulta:', e);
+            toast.error('Erro ao cancelar consulta');
         }
     };
 
@@ -202,9 +207,13 @@ export function Dashboard({
                             : appointment
                     )
                 );
+                toast.success('Consulta marcada como concluída');
+            } else {
+                toast.error('Erro ao concluir consulta');
             }
         } catch (e) {
             console.error('Erro ao completar consulta:', e);
+            toast.error('Erro ao concluir consulta');
         }
     };
 

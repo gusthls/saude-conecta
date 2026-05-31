@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import {
     LogOut,
     Stethoscope,
@@ -119,12 +120,15 @@ export function AdminPanel({
             if (!res.ok) {
                 const message = await res.text();
                 console.error('Falha ao cadastrar médico:', res.status, message);
+                toast.error('Erro ao cadastrar médico');
                 return;
             }
 
+            toast.success(`Médico ${data.name} cadastrado com sucesso!`);
             setMedicDialogOpen(false);
         } catch (error) {
             console.error('Erro ao cadastrar médico:', error);
+            toast.error('Erro ao cadastrar médico');
         }
     };
 
