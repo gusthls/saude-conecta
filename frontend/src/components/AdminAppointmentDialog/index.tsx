@@ -150,14 +150,11 @@ export function AdminAppointmentDialog({
                 return;
             }
 
-            // Combinar data e hora em ISO format
-            const scheduledAt = `${data.date}T${data.time}`;
-
-            // Enviar POST para criar consulta
+            // Enviar POST para criar consulta com data e hora separados
             const payload = {
                 patient_id: selectedPatient.id,
                 medic_id: selectedMedic.medic_id,
-                scheduled_at: scheduledAt,
+                scheduled_at: data.date,
                 appointment_time: data.time,
             };
 
