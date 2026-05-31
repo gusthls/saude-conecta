@@ -31,13 +31,14 @@ export function RegisterMedicDialog({
         let mounted = true;
         (async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/medics');
+                const res = await fetch('http://localhost:3000/api/specialties');
                 if (!res.ok) return;
                 const data = await res.json();
                 if (!mounted) return;
-                const rawSpecs = data.map((m: any) => m.specialty).filter(Boolean);
-                const specs = Array.from(new Set(rawSpecs)).map(String);
-                setSpecialties(specs as string[]);
+                const specs = (data as any[])
+                    .map((spec) => String(spec.name))
+                    .filter(Boolean);
+                setSpecialties(specs);
             } catch (e) {
                 console.warn('Erro ao carregar especialidades:', e);
             }
