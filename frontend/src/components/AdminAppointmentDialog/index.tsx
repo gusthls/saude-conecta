@@ -43,6 +43,7 @@ export function AdminAppointmentDialog({
 }: AdminAppointmentDialogProps) {
     const [specialties, setSpecialties] = useState<{ id: number; name: string }[]>([]);
     const [medics, setMedics] = useState<Medic[]>([]);
+    const [patients, setPatients] = useState<{ id: number; name: string }[]>([]);
 
     useEffect(() => {
         let mounted = true;
@@ -67,6 +68,21 @@ export function AdminAppointmentDialog({
                         specialty_id: m.specialty_id,
                     }))
                 );
+
+                // Buscar pacientes ativos
+                const patientsRes = await fetch('http://localhost:3000/api/patients');
+                if (!patientsRes.ok) {
+                    console.warn('Erro ao buscar pacientes:', patientsRes.status);
+                    return;
+                }
+                const patientsData = await patientsRes.json();
+                console.debug('Pacientes carregados:', patientsData);
+                if (!mounted) return;
+                const activePatients = patientsData
+                    .filter((p: any) => p.active === 1 || p.active === true)
+                    .map((p: any) => ({ id: p.id, name: p.name }));
+                console.debug('Pacientes ativos filtrados:', activePatients);
+                setPatients(activePatients);
             } catch (e) {
                 console.warn('Erro ao buscar dados:', e);
             }
@@ -128,15 +144,7 @@ export function AdminAppointmentDialog({
                 return;
             }
 
-            // Buscar patient_id pelo nome (buscar na API)
-            const patientsRes = await fetch('http://localhost:3000/api/patients');
-            if (!patientsRes.ok) {
-                console.error('Erro ao buscar pacientes');
-                return;
-            }
-            const patients = await patientsRes.json();
-            const selectedPatient = patients.find((p: any) => p.name === data.patientName);
-            
+            const selectedPatient = patients.find((p) => String(p.id) === data.patientName);
             if (!selectedPatient) {
                 console.error('Paciente não encontrado');
                 return;
@@ -172,9 +180,9 @@ export function AdminAppointmentDialog({
                 return;
             }
 
-            // Chamar callback local — ajustar specialty para enviar o nome, não o id
+            // Chamar callback local — ajustar specialty para enviar o nome, não o id, e garantir patientName correto
             const specialtyName = specialties.find(s => String(s.id) === data.specialty)?.name || data.specialty;
-            onSubmit({ ...data, specialty: specialtyName });
+            onSubmit({ ...data, specialty: specialtyName, patientName: selectedPatient.name });
             reset();
             onOpenChange(false);
         } catch (e) {
@@ -207,29 +215,33 @@ export function AdminAppointmentDialog({
                     <div className="space-y-2">
                         <Label>Nome do Paciente</Label>
 
-                        <Input
-                            placeholder="Nome completo do paciente"
-                            {...register(
-                                "patientName",
-                                {
-                                    required:
-                                        "Nome do paciente obrigatório",
-                                }
-                            )}
-                            className={
+                        <select
+                            {...register("patientName", {
+                                required:
+                                    "Nome do paciente obrigatório",
+                            })}
+                            className={`w-full h-10 rounded-md border px-3 bg-input-background ${
                                 errors.patientName
                                     ? "border-red-500"
-                                    : ""
-                            }
-                        />
+                                    : "border-border"
+                            }`}
+                        >
+                            <option value="">
+                                Selecione um paciente
+                            </option>
+                            {patients.map((patient) => (
+                                <option
+                                    key={patient.id}
+                                    value={String(patient.id)}
+                                >
+                                    {patient.name}
+                                </option>
+                            ))}
+                        </select>
 
                         {errors.patientName && (
                             <p className="text-sm text-red-500">
-                                {
-                                    errors
-                                        .patientName
-                                        .message
-                                }
+                                {errors.patientName.message}
                             </p>
                         )}
                     </div>
