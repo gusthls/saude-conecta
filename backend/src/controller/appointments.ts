@@ -2,6 +2,28 @@ import { Request, Response } from "express"
 import pool from "../config/database"
 
 
+// Helper: build a JS Date from a date string (YYYY-MM-DD) and time string (HH:MM)
+function buildScheduledAt(scheduled_at?: string, appointment_time?: string): Date | null {
+  if (scheduled_at && appointment_time) {
+    const dateParts = String(scheduled_at).split('-').map(Number);
+    const timeParts = String(appointment_time).split(':').map(Number);
+    if (dateParts.length === 3 && timeParts.length >= 2) {
+      const [y, m, d] = dateParts;
+      const [hh, mm] = timeParts;
+      return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0);
+    }
+  }
+
+  if (scheduled_at) {
+    const asDate = new Date(scheduled_at);
+    if (!isNaN(asDate.getTime())) return asDate;
+    const asDate2 = new Date(String(scheduled_at).replace('T', ' '));
+    if (!isNaN(asDate2.getTime())) return asDate2;
+  }
+
+  return null;
+}
+
 // Get appointments (all, or filtered by medicId/patientId)
 export const getAppointments = async (req: Request, res: Response) => {
   try {
@@ -62,16 +84,16 @@ export const createAppointment = async (req: Request, res: Response) => {
   }
 
   try {
-    // Combine date + time if both provided
-    let scheduledAtValue = scheduled_at;
-    if (scheduled_at && appointment_time) {
-      scheduledAtValue = `${scheduled_at}T${appointment_time}`;
+    // Build a proper Date object for SQL DATETIME
+    const scheduledAtDate = buildScheduledAt(scheduled_at, appointment_time);
+    if (!scheduledAtDate) {
+      return res.status(400).json({ message: 'scheduled_at or appointment_time inválido' });
     }
 
     await pool.request()
       .input("patient_id", patient_id)
       .input("medic_id", medic_id)
-      .input("scheduled_at", scheduledAtValue)
+      .input("scheduled_at", scheduledAtDate)
       .query(`
         INSERT INTO appointments (patient_id, medic_id, scheduled_at)
         VALUES (@patient_id, @medic_id, @scheduled_at)
@@ -189,15 +211,15 @@ export const createCompletedAppointment = async (req: Request, res: Response) =>
   }
 
   try {
-    let scheduledAtValue = scheduled_at;
-    if (scheduled_at && appointment_time) {
-      scheduledAtValue = `${scheduled_at}T${appointment_time}`;
+    const scheduledAtDate = buildScheduledAt(scheduled_at, appointment_time);
+    if (!scheduledAtDate) {
+      return res.status(400).json({ message: 'scheduled_at or appointment_time inválido' });
     }
 
     await pool.request()
       .input("patient_id", patient_id)
       .input("medic_id", medic_id)
-      .input("scheduled_at", scheduledAtValue)
+      .input("scheduled_at", scheduledAtDate)
       .input("notes", notes)
       .query(`
         INSERT INTO appointments (patient_id, medic_id, scheduled_at, notes, completed, completed_at)
