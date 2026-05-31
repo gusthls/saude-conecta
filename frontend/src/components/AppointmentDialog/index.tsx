@@ -142,19 +142,29 @@ export function AppointmentDialog({
             const scheduledAt = `${data.date}T${data.time}`;
 
             // Enviar POST para criar consulta
+            const payload = {
+                patient_id: patientId,
+                medic_id: selectedMedic.medic_id,
+                scheduled_at: scheduledAt,
+                appointment_time: data.time,
+            };
+
+            console.debug('Enviando payload de agendamento:', payload);
+
             const res = await fetch('http://localhost:3000/api/appointments', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    patient_id: patientId,
-                    medic_id: selectedMedic.medic_id,
-                    scheduled_at: scheduledAt,
-                    appointment_time: data.time,
-                })
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) {
-                console.error('Erro ao criar consulta');
+                let bodyText: string | null = null;
+                try {
+                    bodyText = await res.text();
+                } catch (e) {
+                    /* ignore */
+                }
+                console.error('Erro ao criar consulta', res.status, bodyText);
                 return;
             }
 
