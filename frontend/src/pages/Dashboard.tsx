@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import {
     CheckCircle,
@@ -25,18 +25,13 @@ import type { AdminAppointmentFormData } from "../components/AdminAppointmentDia
 
 interface DashboardProps {
     onLogout: () => void;
+    userType: UserType;
 }
 
 export function Dashboard({
     onLogout,
+    userType,
 }: DashboardProps) {
-    /*
-        ALTERE AQUI PARA TESTAR:
-        "patient"
-        "doctor"
-        "admin"
-    */
-    const userType: UserType = "admin";
 
     const [dialogOpen, setDialogOpen] =
         useState(false);
@@ -50,37 +45,13 @@ export function Dashboard({
         >("all");
 
     const [appointments, setAppointments] =
-        useState<Appointment[]>([
-            {
-                id: "1",
-                patientName: "Maria Santos",
-                doctor: "Dr. João Silva",
-                specialty: "Cardiologia",
-                date: "2026-05-25",
-                time: "10:00",
-                status: "scheduled",
-            },
+        useState<Appointment[]>([]);
+    const [cancelModalOpen, setCancelModalOpen] =
+        useState(false);
+    const [cancelAppointmentId, setCancelAppointmentId] =
+        useState<string | null>(null);
 
-            {
-                id: "2",
-                patientName: "Carlos Oliveira",
-                doctor: "Dra. Ana Costa",
-                specialty: "Dermatologia",
-                date: "2026-05-20",
-                time: "14:30",
-                status: "completed",
-            },
-
-            {
-                id: "3",
-                patientName: "Fernanda Lima",
-                doctor: "Dr. João Silva",
-                specialty: "Cardiologia",
-                date: "2026-05-18",
-                time: "09:00",
-                status: "cancelled",
-            },
-        ]);
+    // loading state currently unused; keep if needed later
 
     const handleCreateAppointment = (
         data: AppointmentFormData
@@ -98,6 +69,51 @@ export function Dashboard({
         ]);
     };
 
+    // Carregar consultas da API conforme userType
+    useEffect(() => {
+        const load = async () => {
+            // start loading
+
+            try {
+                const raw = localStorage.getItem('session');
+                let medicId: string | undefined;
+                let patientId: string | undefined;
+                if (raw) {
+                    const s = JSON.parse(raw);
+                    if (s.userType === 'medic') medicId = s.user?.id;
+                    if (s.userType === 'patient') patientId = s.user?.id;
+                }
+
+                const params = new URLSearchParams();
+                if (medicId) params.set('medicId', String(medicId));
+                if (patientId) params.set('patientId', String(patientId));
+
+                const appointmentsRes = await fetch(
+                    `http://localhost:3000/api/appointments${params.toString() ? `?${params.toString()}` : ''}`
+                );
+                const appointmentsData = appointmentsRes.ok ? await appointmentsRes.json() : [];
+
+                setAppointments(
+                    appointmentsData.map((a: any) => ({
+                        id: String(a.id),
+                        patientName: a.patientName || '',
+                        medic: a.medic || '',
+                        specialty: a.specialty || '',
+                        date: a.date || '',
+                        time: a.time || '',
+                        status: a.status as Appointment['status'],
+                    }))
+                );
+            } catch (e) {
+                console.error('Erro ao carregar consultas:', e);
+            } finally {
+                // finished loading
+            }
+        };
+
+        load();
+    }, []);
+
     const handleAdminCreateAppointment = (
         data: AdminAppointmentFormData
     ) => {
@@ -113,36 +129,83 @@ export function Dashboard({
         ]);
     };
 
-    const handleCancelAppointment = (
+    const handleCancelAppointment = async (
         id: string
     ) => {
-        setAppointments(
-            appointments.map((appointment) =>
-                appointment.id === id
-                    ? {
-                          ...appointment,
-                          status:
-                              "cancelled" as const,
-                      }
-                    : appointment
-            )
-        );
+        try {
+            const res = await fetch(
+                `http://localhost:3000/api/appointments/${id}`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ canceled: true }),
+                }
+            );
+            if (res.ok) {
+                setAppointments(
+                    appointments.map((appointment) =>
+                        appointment.id === id
+                            ? {
+                                  ...appointment,
+                                  status:
+                                      "cancelled" as const,
+                              }
+                            : appointment
+                    )
+                );
+            }
+        } catch (e) {
+            console.error('Erro ao cancelar consulta:', e);
+        }
     };
 
-    const handleCompleteAppointment = (
+    const requestCancelAppointment = (
         id: string
     ) => {
-        setAppointments(
-            appointments.map((appointment) =>
-                appointment.id === id
-                    ? {
-                          ...appointment,
-                          status:
-                              "completed" as const,
-                      }
-                    : appointment
-            )
-        );
+        setCancelAppointmentId(id);
+        setCancelModalOpen(true);
+    };
+
+    const handleConfirmCancel = () => {
+        if (!cancelAppointmentId) return;
+        handleCancelAppointment(cancelAppointmentId);
+        setCancelAppointmentId(null);
+        setCancelModalOpen(false);
+    };
+
+    const handleDismissCancel = () => {
+        setCancelAppointmentId(null);
+        setCancelModalOpen(false);
+    };
+
+    const handleCompleteAppointment = async (
+        id: string
+    ) => {
+        try {
+            const res = await fetch(
+                `http://localhost:3000/api/appointments/${id}`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ completed: true }),
+                }
+            );
+            if (res.ok) {
+                setAppointments(
+                    appointments.map((appointment) =>
+                        appointment.id === id
+                            ? {
+                                  ...appointment,
+                                  status:
+                                      "completed" as const,
+                              }
+                            : appointment
+                    )
+                );
+            }
+        } catch (e) {
+            console.error('Erro ao completar consulta:', e);
+        }
     };
 
     const scheduledAppointments =
@@ -166,22 +229,14 @@ export function Dashboard({
                 "cancelled"
         );
 
+    // Filtrar por status quando selecionado
     const filteredAppointments =
         activeFilter === "all"
             ? appointments
-            : [
-                  ...appointments.filter(
-                      (appointment) =>
-                          appointment.status ===
-                          activeFilter
-                  ),
-
-                  ...appointments.filter(
-                      (appointment) =>
-                          appointment.status !==
-                          activeFilter
-                  ),
-              ];
+            : appointments.filter(
+                  (appointment) =>
+                      appointment.status === activeFilter
+              );
 
     // Renderizar a interface do Admin
     if (userType === "admin") {
@@ -353,12 +408,11 @@ export function Dashboard({
                                         userType
                                     }
                                     onCancel={
-                                        handleCancelAppointment
+                                        requestCancelAppointment
                                     }
                                 />
 
-                                {userType ===
-                                    "doctor" &&
+                                {userType === "medic" &&
                                     appointment.status ===
                                         "scheduled" && (
                                         <Button
@@ -394,6 +448,33 @@ export function Dashboard({
                     }
                 />
             )}
+
+            {cancelModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                        <h3 className="text-xl font-semibold text-primary mb-3">
+                            Confirmar cancelamento
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-6">
+                            Tem certeza de que deseja cancelar esta consulta?
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={handleDismissCancel}
+                            >
+                                Não
+                            </Button>
+                            <Button
+                                onClick={handleConfirmCancel}
+                            >
+                                Sim, cancelar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }

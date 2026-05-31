@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { UserType } from "./types/appointments";
 
 import { AuthPage } from "./pages/AuthPage";
 import { LoginForm } from "./pages/LoginForm";
@@ -19,6 +20,7 @@ type ViewType =
 function App() {
     // controla se está logado
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [userType, setUserType] = useState<UserType | null>(null);
 
     // pagina inicial home
     const [currentView, setCurrentView] = useState<ViewType>("home");
@@ -38,22 +40,53 @@ function App() {
             : "Digite seu email para recuperar sua senha";
 
     // login
-    function handleLogin() {
+    function handleLogin(type?: UserType) {
         setIsLoggedIn(true);
+        if (type) setUserType(type);
     }
 
     // logout
     function handleLogout() {
         setIsLoggedIn(false);
-        // Quando o usuário desloga, ele volta lá para a página inicial
+        setUserType(null);
+
+        // remove sessão
+        try {
+            localStorage.removeItem("session");
+        } catch (e) {
+            console.warn("Erro ao limpar sessão", e);
+        }
+
+        // Quando o usuário desloga, ele volta para a página inicial
         setCurrentView("home");
     }
+
+    // restaura sessão ao carregar a aplicação
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem("session");
+            if (!raw) return;
+
+            const session = JSON.parse(raw);
+            if (session && session.expires && session.expires > Date.now()) {
+                setIsLoggedIn(true);
+                setUserType(session.userType as UserType);
+            } else {
+                localStorage.removeItem("session");
+            }
+        } catch (e) {
+            console.warn("Erro ao restaurar sessão:", e);
+        }
+    }, []);
 
     // 1. SE ESTIVER LOGADO: Mostra o Dashboard de forma prioritária
     if (isLoggedIn) {
         return (
             <>
-                <Dashboard onLogout={handleLogout} />
+                <Dashboard
+                    onLogout={handleLogout}
+                    userType={userType ?? "patient"}
+                />
                 <Toaster />
             </>
         );
@@ -62,7 +95,6 @@ function App() {
     // 2. SE NÃO ESTIVER LOGADO: Roda todo o resto do código junto
     return (
         <div className="size-full">
-            
             {/* TELA 1: Se a visualização for "home", roda a Home aqui dentro */}
             {currentView === "home" && (
                 <Home onNavigateToLogin={() => setCurrentView("login")} />

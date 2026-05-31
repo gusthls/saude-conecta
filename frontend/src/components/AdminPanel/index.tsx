@@ -10,6 +10,7 @@ import { Button } from "../Button";
 import { AppointmentCard } from "../AppointmentCard";
 import { RegisterMedicDialog } from "../RegisterMedicDialog";
 import { AdminAppointmentDialog } from "../AdminAppointmentDialog";
+import { UsersList } from "../UsersList";
 
 import type { Appointment } from "../../types/appointments";
 import type { AdminAppointmentFormData } from "../AdminAppointmentDialog";
@@ -38,13 +39,20 @@ export function AdminPanel({
 
     const [filterBySpecialty, setFilterBySpecialty] =
         useState<string>("");
+    const [showUsers, setShowUsers] = useState(false);
+    const [statusFilter, setStatusFilter] = useState<
+        | "all"
+        | "scheduled"
+        | "completed"
+        | "cancelled"
+    >("all");
 
     // Extrair médicos e especialidades únicos
     const uniqueDoctors = Array.from(
         new Set(
             appointments.map(
                 (appointment) =>
-                    appointment.doctor
+                    appointment.medic
             )
         )
     );
@@ -58,20 +66,19 @@ export function AdminPanel({
         )
     );
 
-    // Filtrar consultas
-    const filteredAppointments =
-        appointments.filter((appointment) => {
+    // Filtrar consultas (por médico, especialidade e status)
+    const filteredAppointments = appointments.filter(
+        (appointment) => {
             const matchesDoctor =
-                !filterByDoctor ||
-                appointment.doctor ===
-                    filterByDoctor;
+                !filterByDoctor || appointment.medic === filterByDoctor;
             const matchesSpecialty =
-                !filterBySpecialty ||
-                appointment.specialty ===
-                    filterBySpecialty;
-            return matchesDoctor &&
-                matchesSpecialty;
-        });
+                !filterBySpecialty || appointment.specialty === filterBySpecialty;
+            const matchesStatus =
+                statusFilter === "all" || appointment.status === statusFilter;
+
+            return matchesDoctor && matchesSpecialty && matchesStatus;
+        }
+    );
 
     // Contar por status
     const scheduledCount = filteredAppointments.filter(
@@ -86,15 +93,39 @@ export function AdminPanel({
             (a) => a.status === "cancelled"
         ).length;
 
-    const handleRegisterMedic = (data: {
+    const handleRegisterMedic = async (data: {
         name: string;
-        specialty: string;
+        specialty_id: string;
         email: string;
         phone: string;
+        cpf: string;
         crm: string;
     }) => {
-        console.log("Novo médico registrado:", data);
-        setMedicDialogOpen(false);
+        try {
+            const res = await fetch('http://localhost:3000/api/medics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: data.name,
+                    cpf: data.cpf,
+                    email: data.email,
+                    phone: data.phone,
+                    password: 'S@udeC0necta',
+                    crm: data.crm,
+                    specialty_id: Number(data.specialty_id),
+                }),
+            });
+
+            if (!res.ok) {
+                const message = await res.text();
+                console.error('Falha ao cadastrar médico:', res.status, message);
+                return;
+            }
+
+            setMedicDialogOpen(false);
+        } catch (error) {
+            console.error('Erro ao cadastrar médico:', error);
+        }
     };
 
     const handleAdminCreateAppointment = (
@@ -171,10 +202,64 @@ export function AdminPanel({
                             <Users className="w-4 h-4 mr-2" />
                             Cadastrar Médico
                         </Button>
+
+                        <Button
+                            variant={showUsers ? "default" : "outline"}
+                            onClick={() => setShowUsers((s) => !s)}
+                        >
+                            <Users className="w-4 h-4 mr-2" />
+                            Gerenciar Usuários
+                        </Button>
                     </div>
                 </div>
 
                 {/* STATS */}
+                <div className="mb-4 flex items-center justify-start gap-3">
+                    <button
+                        onClick={() => setStatusFilter("scheduled")}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                            statusFilter === "scheduled"
+                                ? "bg-blue-600 text-white"
+                                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                        }`}
+                    >
+                        Agendadas ({appointments.filter((a) => a.status === "scheduled").length})
+                    </button>
+
+                    <button
+                        onClick={() => setStatusFilter("completed")}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                            statusFilter === "completed"
+                                ? "bg-green-600 text-white"
+                                : "bg-green-100 text-green-700 hover:bg-green-200"
+                        }`}
+                    >
+                        Concluídas ({appointments.filter((a) => a.status === "completed").length})
+                    </button>
+
+                    <button
+                        onClick={() => setStatusFilter("cancelled")}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                            statusFilter === "cancelled"
+                                ? "bg-red-600 text-white"
+                                : "bg-red-100 text-red-700 hover:bg-red-200"
+                        }`}
+                    >
+                        Canceladas ({appointments.filter((a) => a.status === "cancelled").length})
+                    </button>
+
+                    <button
+                        onClick={() => setStatusFilter("all")}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                            statusFilter === "all"
+                                ? "bg-primary text-white"
+                                : "bg-muted text-foreground hover:bg-muted/80"
+                        }`}
+                    >
+                        Todas ({appointments.length})
+                    </button>
+                </div>
+
                 <div className="grid grid-cols-3 gap-4 mb-8">
                     <div className="bg-white rounded-lg p-4 border">
                         <p className="text-sm text-muted-foreground">
@@ -204,7 +289,8 @@ export function AdminPanel({
                     </div>
                 </div>
 
-                {/* FILTROS */}
+                {/* FILTROS - hidden when managing users */}
+                {!showUsers && (
                 <div className="bg-white rounded-lg p-4 mb-8 border">
                     <h3 className="font-semibold text-lg mb-4">
                         Filtros
@@ -230,12 +316,12 @@ export function AdminPanel({
                                     Todos os médicos
                                 </option>
                                 {uniqueDoctors.map(
-                                    (doctor) => (
+                                    (medic) => (
                                         <option
-                                            key={doctor}
-                                            value={doctor}
+                                            key={medic}
+                                            value={medic}
                                         >
-                                            {doctor}
+                                            {medic}
                                         </option>
                                     )
                                 )}
@@ -300,35 +386,40 @@ export function AdminPanel({
                         </Button>
                     )}
                 </div>
+                )}
 
-                {/* CONSULTAS */}
+                {/* CONSULTAS or USERS */}
                 <div>
-                    <h3 className="font-semibold text-lg mb-4">
-                        Todas as Consultas
-                    </h3>
+                    {showUsers ? (
+                        <div>
+                            <h3 className="font-semibold text-lg mb-4">
+                                Usuários da Plataforma
+                            </h3>
 
-                    {filteredAppointments.length ===
-                    0 ? (
-                        <div className="text-center py-12 bg-white rounded-lg border">
-                            <p className="text-muted-foreground">
-                                Nenhuma consulta
-                                encontrada
-                            </p>
+                            <UsersList />
                         </div>
                     ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {filteredAppointments.map(
-                                (appointment) => (
-                                    <AppointmentCard
-                                        key={
-                                            appointment.id
-                                        }
-                                        appointment={
-                                            appointment
-                                        }
-                                        userType="admin"
-                                    />
-                                )
+                        <div>
+                            <h3 className="font-semibold text-lg mb-4">
+                                Todas as Consultas
+                            </h3>
+
+                            {filteredAppointments.length === 0 ? (
+                                <div className="text-center py-12 bg-white rounded-lg border">
+                                    <p className="text-muted-foreground">
+                                        Nenhuma consulta encontrada
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                    {filteredAppointments.map((appointment) => (
+                                        <AppointmentCard
+                                            key={appointment.id}
+                                            appointment={appointment}
+                                            userType="admin"
+                                        />
+                                    ))}
+                                </div>
                             )}
                         </div>
                     )}

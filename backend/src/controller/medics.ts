@@ -4,7 +4,7 @@ import pool from "../config/database"
 
 export const getMedics = async (req: Request, res: Response) => {
   try {
-    const response = await pool.request().query("SELECT * FROM medics")
+    const response = await pool.request().query("SELECT * FROM agents WHERE agent_type = 'medic'")
 
     return res.status(200).json(response.recordset)
 
@@ -19,9 +19,19 @@ export const getMedics = async (req: Request, res: Response) => {
 
 
 export const createMedic = async (req: Request, res: Response) => {
-  const { name, cpf, email, phone, password, rm, specialty, status_id } = req.body
+  const {
+    name,
+    cpf,
+    email,
+    phone,
+    password,
+    crm,
+    specialty_id,
+  } = req.body
 
-  if (!name || !cpf || !email || !password || !rm || !specialty || !status_id) {
+  const finalPassword = String(password || "S@udeC0necta");
+
+  if (!name || !cpf || !email || !phone || !crm || !specialty_id) {
     return res.status(400).json({
       message: "Campos obrigatórios não preenchidos"
     })
@@ -33,13 +43,12 @@ export const createMedic = async (req: Request, res: Response) => {
       .input("cpf", cpf)
       .input("email", email)
       .input("phone", phone)
-      .input("password", password)
-      .input("rm", rm)
-      .input("specialty", specialty)
-      .input("status_id", status_id)
+      .input("password", finalPassword)
+      .input("crm", crm)
+      .input("specialty_id", specialty_id)
       .query(`
-        INSERT INTO medics (name, cpf, email, phone, password, rm, specialty, status_id)
-        VALUES (@name, @cpf, @email, @phone, @password, @rm, @specialty, @status_id)
+        INSERT INTO agents (agent_type, name, cpf, crm, email, phone, password, specialty_id)
+        VALUES ('medic', @name, @cpf, @crm, @email, @phone, @password, @specialty_id)
       `)
 
     return res.status(201).json({
@@ -58,9 +67,9 @@ export const createMedic = async (req: Request, res: Response) => {
 
 export const updateMedic = async (req: Request, res: Response) => {
   const { id } = req.params
-  const { name, email, phone, specialty } = req.body
+  const { name, email, phone, specialty_id, active } = req.body
 
-  if (!name && !email && !phone && !specialty) {
+  if (!name && !email && !phone && !specialty_id && active === undefined) {
     return res.status(400).json({
       message: "Nenhum campo para atualizar"
     })
@@ -68,18 +77,20 @@ export const updateMedic = async (req: Request, res: Response) => {
 
   try {
     await pool.request()
-      .input("id", id)
+      .input("id", id) 
       .input("name", name)
       .input("email", email)
       .input("phone", phone)
-      .input("specialty", specialty)
+      .input("specialty_id", specialty_id)
+      .input("active", active)
       .query(`
-        UPDATE medics
+        UPDATE agents
         SET name = COALESCE(@name, name),
             email = COALESCE(@email, email),
             phone = COALESCE(@phone, phone),
-            specialty = COALESCE(@specialty, specialty)
-        WHERE medic_id = @id
+            specialty_id = COALESCE(@specialty_id, specialty_id),
+            active = COALESCE(@active, active)
+        WHERE id = @id
       `)
 
     return res.status(200).json({

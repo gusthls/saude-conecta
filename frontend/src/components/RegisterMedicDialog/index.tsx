@@ -5,9 +5,10 @@ import { Label } from "../Label";
 
 interface RegisterMedicFormData {
     name: string;
-    specialty: string;
+    specialty_id: string;
     email: string;
     phone: string;
+    cpf: string;
     crm: string;
 }
 
@@ -16,25 +17,40 @@ interface RegisterMedicDialogProps {
     onOpenChange: (open: boolean) => void;
     onSubmit: (data: RegisterMedicFormData) => void;
 }
+import { useEffect, useState } from "react";
 
-const specialties = [
-    "Cardiologia",
-    "Dermatologia",
-    "Ortopedia",
-    "Pediatria",
-    "Clínico Geral",
-    "Psiquiatria",
-    "Neurologia",
-    "Oftalmologia",
-    "Gastroenterologia",
-    "Urologia",
-];
+type Specialty = { id: number; name: string };
+
+const DEFAULT_SPECIALTIES: Specialty[] = [];
 
 export function RegisterMedicDialog({
     open,
     onOpenChange,
     onSubmit,
 }: RegisterMedicDialogProps) {
+    const [specialties, setSpecialties] = useState<Specialty[]>(DEFAULT_SPECIALTIES);
+
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/specialties');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!mounted) return;
+                const specs = (data as any[])
+                    .map((spec) => ({ id: spec.id, name: String(spec.name) }))
+                    .filter((spec) => spec.name);
+                setSpecialties(specs);
+            } catch (e) {
+                console.warn('Erro ao carregar especialidades:', e);
+            }
+        })();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
     const {
         register,
         handleSubmit,
@@ -110,14 +126,14 @@ export function RegisterMedicDialog({
 
                         <select
                             {...register(
-                                "specialty",
+                                "specialty_id",
                                 {
                                     required:
                                         "Especialidade obrigatória",
                                 }
                             )}
                             className={`w-full h-10 rounded-md border px-3 bg-input-background ${
-                                errors.specialty
+                                errors.specialty_id
                                     ? "border-red-500"
                                     : "border-border"
                             }`}
@@ -129,22 +145,51 @@ export function RegisterMedicDialog({
                             {specialties.map(
                                 (spec) => (
                                     <option
-                                        key={spec}
-                                        value={spec}
+                                        key={spec.id}
+                                        value={String(spec.id)}
                                     >
-                                        {spec}
+                                        {spec.name}
                                     </option>
                                 )
                             )}
                         </select>
 
-                        {errors.specialty && (
+                        {errors.specialty_id && (
                             <p className="text-sm text-red-500">
                                 {
                                     errors
-                                        .specialty
+                                        .specialty_id
                                         .message
                                 }
+                            </p>
+                        )}
+                    </div>
+
+                    {/* CPF */}
+                    <div className="space-y-2">
+                        <Label>CPF</Label>
+
+                        <Input
+                            placeholder="000.000.000-00"
+                            {...register("cpf", {
+                                required:
+                                    "CPF obrigatório",
+                                pattern: {
+                                    value: /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
+                                    message:
+                                        "Cpf inválido",
+                                },
+                            })}
+                            className={
+                                errors.cpf
+                                    ? "border-red-500"
+                                    : ""
+                            }
+                        />
+
+                        {errors.cpf && (
+                            <p className="text-sm text-red-500">
+                                {errors.cpf.message}
                             </p>
                         )}
                     </div>

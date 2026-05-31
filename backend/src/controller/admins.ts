@@ -4,7 +4,7 @@ import pool from "../config/database"
 
 export const getAdmins = async (req: Request, res: Response) => {
   try {
-    const response = await pool.request().query("SELECT * FROM admins")
+    const response = await pool.request().query("SELECT * FROM agents WHERE agent_type = 'admin'")
 
     return res.status(200).json(response.recordset)
 
@@ -36,8 +36,8 @@ export const createAdmin = async (req: Request, res: Response) => {
       .input("ra", ra)
       .input("status_id", status_id)
       .query(`
-        INSERT INTO admins (name, cpf, email, phone, password, ra, status_id)
-        VALUES (@name, @cpf, @email, @phone, @password, @ra, @status_id)
+        INSERT INTO agents (name, cpf, email, phone, password, ra, status_id, agent_type)
+        VALUES (@name, @cpf, @email, @phone, @password, @ra, @status_id, 'admin')
       `)
 
     return res.status(201).json({
@@ -55,9 +55,9 @@ export const createAdmin = async (req: Request, res: Response) => {
 
 export const updateAdmin = async (req: Request, res: Response) => {
   const { id } = req.params
-  const { name, email, phone } = req.body
+  const { name, email, phone, active } = req.body
 
-  if (!name && !email && !phone) {
+  if (!name && !email && !phone && active === undefined) {
     return res.status(400).json({
       message: "Nenhum campo para atualizar"
     })
@@ -69,12 +69,14 @@ export const updateAdmin = async (req: Request, res: Response) => {
       .input("name", name)
       .input("email", email)
       .input("phone", phone)
+      .input("active", active)
       .query(`
-        UPDATE admins
+        UPDATE agents
         SET name = COALESCE(@name, name),
             email = COALESCE(@email, email),
-            phone = COALESCE(@phone, phone)
-        WHERE admin_id = @id
+            phone = COALESCE(@phone, phone),
+            active = COALESCE(@active, active)
+        WHERE id = @id
       `)
 
     return res.status(200).json({

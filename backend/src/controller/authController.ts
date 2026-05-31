@@ -5,21 +5,64 @@ export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
-    const result = await pool
+    // Primeiro tenta encontrar o usuário na tabela patients
+    const patientResult = await pool
       .request()
       .input('email', email)
-      .query('SELECT password FROM patients WHERE email = @email');
+      .query('SELECT id, email, password, name, active FROM patients WHERE email = @email');
 
-    if (result.recordset.length === 0) {
+    if (patientResult.recordset.length > 0) {
+      const user = patientResult.recordset[0];
+
+      // Verifica se o usuário está ativo (cobre 0, '0' e false)
+      if (Number(user.active) === 0) {
+        return res.status(403).json({ message: 'SEU USUÁRIO NÃO É CAPAZ DE REALIZAR O LOGIN, CONTATE O SUPORTE' });
+      }
+
+      if (user.password !== password) {
+        return res.status(401).json({ message: 'Senha incorreta' });
+      }
+
+      return res.status(200).json({
+        message: 'Login realizado com sucesso!',
+        user: { id: user.id, email: user.email, name: user.name },
+        userType: 'patient',
+      });
+    }
+
+    // Se não for paciente, tenta na tabela agents
+    const agentResult = await pool
+      .request()
+      .input('email', email)
+      .query('SELECT id, email, password, agent_type, active FROM agents WHERE email = @email');
+
+    if (agentResult.recordset.length === 0) {
       return res.status(401).json({ message: 'Email não encontrado' });
     }
 
-    const user = result.recordset[0];
+    const agent = agentResult.recordset[0];
 
-    if (user.password !== password) {
+    // Verifica se o agente está ativo (cobre 0, '0' e false)
+    if (Number(agent.active) === 0) {
+      return res.status(403).json({ message: 'SEU USUÁRIO NÃO É CAPAZ DE REALIZAR O LOGIN, CONTATE O SUPORTE' });
+    }
+
+    if (agent.password !== password) {
       return res.status(401).json({ message: 'Senha incorreta' });
     }
-    return res.status(200).json({ message: 'Login realizado com sucesso!' });
+
+    // Normaliza o userType para a interface frontend
+    // Se for admin, retorna 'admin', caso contrário considera como 'medic'
+    let userType = 'medic';
+    if (agent.agent_type && String(agent.agent_type).toLowerCase() === 'admin') {
+      userType = 'admin';
+    }
+
+    return res.status(200).json({
+      message: 'Login realizado com sucesso!',
+      user: { id: agent.id, email: agent.email, agent_type: agent.agent_type },
+      userType,
+    });
 
   } catch (error) {
     console.error('Erro no login:', error);
