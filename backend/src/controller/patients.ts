@@ -59,9 +59,9 @@ export const createPatient = async (req: Request, res: Response) => {
 
 export const updatePatient = async (req: Request, res: Response) => {
   const { id } = req.params
-  const { name, email, phone } = req.body
+  const { name, email, phone, active } = req.body
 
-  if (!name && !email && !phone) {
+  if (!name && !email && !phone && active === undefined) {
     return res.status(400).json({
       message: "Nenhum campo para atualizar"
     })
@@ -73,12 +73,14 @@ export const updatePatient = async (req: Request, res: Response) => {
       .input("name", name)
       .input("email", email)
       .input("phone", phone)
+      .input("active", active)
       .query(`
         UPDATE patients
         SET name = COALESCE(@name, name),
             email = COALESCE(@email, email),
-            phone = COALESCE(@phone, phone)
-        WHERE patient_id = @id
+            phone = COALESCE(@phone, phone),
+            active = COALESCE(@active, active)
+        WHERE id = @id
       `)
 
     return res.status(200).json({
