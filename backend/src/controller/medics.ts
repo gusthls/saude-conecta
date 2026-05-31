@@ -68,7 +68,7 @@ export const updateMedic = async (req: Request, res: Response) => {
 
   try {
     await pool.request()
-      .input("id", id)
+      .input("id", id) 
       .input("name", name)
       .input("email", email)
       .input("phone", phone)
