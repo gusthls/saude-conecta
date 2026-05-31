@@ -1,24 +1,22 @@
 import { Request, Response } from "express"
+import sql from "mssql"
 import pool from "../config/database"
 
+function padNumber(value: number) {
+  return String(value).padStart(2, "0");
+}
 
-// Helper: build a JS Date from a date string (YYYY-MM-DD) and time string (HH:MM)
-function buildScheduledAt(scheduled_at?: string, appointment_time?: string): Date | null {
+function buildScheduledAtString(scheduled_at?: string, appointment_time?: string): string | null {
   if (scheduled_at && appointment_time) {
     const dateParts = String(scheduled_at).split('-').map(Number);
     const timeParts = String(appointment_time).split(':').map(Number);
     if (dateParts.length === 3 && timeParts.length >= 2) {
       const [y, m, d] = dateParts;
       const [hh, mm] = timeParts;
-      return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0);
+      if ([y, m, d, hh, mm].every((n) => !isNaN(n))) {
+        return `${y}-${padNumber(m)}-${padNumber(d)} ${padNumber(hh-3)}:${padNumber(mm)}:00`;
+      }
     }
-  }
-
-  if (scheduled_at) {
-    const asDate = new Date(scheduled_at);
-    if (!isNaN(asDate.getTime())) return asDate;
-    const asDate2 = new Date(String(scheduled_at).replace('T', ' '));
-    if (!isNaN(asDate2.getTime())) return asDate2;
   }
 
   return null;
@@ -48,16 +46,19 @@ export const getAppointments = async (req: Request, res: Response) => {
       LEFT JOIN patients p ON a.patient_id = p.id
       LEFT JOIN agents ag ON a.medic_id = ag.id
       LEFT JOIN specialties sp ON ag.specialty_id = sp.id
+      WHERE 1=1
     `;
 
     const request = pool.request();
 
     if (medicId) {
-      query += ` WHERE a.medic_id = @medicId`;
-      request.input('medicId', medicId as string);
-    } else if (patientId) {
-      query += ` WHERE a.patient_id = @patientId`;
-      request.input('patientId', patientId as string);
+      query += ` AND a.medic_id = @medicId`;
+      request.input('medicId', sql.Int, Number(medicId));
+    }
+
+    if (patientId) {
+      query += ` AND a.patient_id = @patientId`;
+      request.input('patientId', sql.Int, Number(patientId));
     }
 
     const response = await request.query(query);
@@ -85,15 +86,15 @@ export const createAppointment = async (req: Request, res: Response) => {
 
   try {
     // Build a proper Date object for SQL DATETIME
-    const scheduledAtDate = buildScheduledAt(scheduled_at, appointment_time);
-    if (!scheduledAtDate) {
+    const scheduledAtString = buildScheduledAtString(scheduled_at, appointment_time);
+    if (!scheduledAtString) {
       return res.status(400).json({ message: 'scheduled_at or appointment_time inválido' });
     }
 
     await pool.request()
       .input("patient_id", patient_id)
       .input("medic_id", medic_id)
-      .input("scheduled_at", scheduledAtDate)
+      .input("scheduled_at", sql.DateTime, scheduledAtString)
       .query(`
         INSERT INTO appointments (patient_id, medic_id, scheduled_at)
         VALUES (@patient_id, @medic_id, @scheduled_at)
@@ -123,15 +124,34 @@ export const updateAppointment = async (req: Request, res: Response) => {
     })
   }
 
+  // Não permitir marcar concluído e cancelado como true ao mesmo tempo
+  if (completed === true && canceled === true) {
+    return res.status(400).json({ message: 'Não é permitido marcar uma consulta como concluída e cancelada ao mesmo tempo' });
+  }
+
   try {
+
     const request = pool.request().input("id", id);
 
-    if (completed !== undefined) request.input("completed", completed ? 1 : 0);
-    if (canceled !== undefined) request.input("canceled", canceled ? 1 : 0);
+    const setClauses: string[] = [];
 
-    let setClauses: string[] = [];
-    if (completed !== undefined) setClauses.push(`completed = @completed`);
-    if (canceled !== undefined) setClauses.push(`canceled = @canceled`);
+    // Quando marcar como concluído: set completed=1, completed_at=GETDATE(), e garantir canceled=0
+    if (completed !== undefined) {
+      if (completed) {
+        setClauses.push(`completed = 1`, `completed_at = GETDATE()`, `canceled = 0`, `canceled_at = NULL`);
+      } else {
+        setClauses.push(`completed = 0`, `completed_at = NULL`);
+      }
+    }
+
+    // Quando marcar como cancelado: set canceled=1, canceled_at=GETDATE(), e garantir completed=0
+    if (canceled !== undefined) {
+      if (canceled) {
+        setClauses.push(`canceled = 1`, `canceled_at = GETDATE()`, `completed = 0`, `completed_at = NULL`);
+      } else {
+        setClauses.push(`canceled = 0`, `canceled_at = NULL`);
+      }
+    }
 
     const setSql = setClauses.join(', ');
 
@@ -175,17 +195,19 @@ export const getCompletedAppointments = async (req: Request, res: Response) => {
       LEFT JOIN patients p ON a.patient_id = p.id
       LEFT JOIN agents ag ON a.medic_id = ag.id
       LEFT JOIN specialties sp ON ag.specialty_id = sp.id
-      WHERE a.completed = 1
+      WHERE a.completed = 1 AND a.canceled = 0
     `;
 
     const request = pool.request();
 
     if (medicId) {
       query += ` AND a.medic_id = @medicId`;
-      request.input('medicId', medicId as string);
-    } else if (patientId) {
+      request.input('medicId', sql.Int, Number(medicId));
+    }
+
+    if (patientId) {
       query += ` AND a.patient_id = @patientId`;
-      request.input('patientId', patientId as string);
+      request.input('patientId', sql.Int, Number(patientId));
     }
 
     const response = await request.query(query);
@@ -211,15 +233,15 @@ export const createCompletedAppointment = async (req: Request, res: Response) =>
   }
 
   try {
-    const scheduledAtDate = buildScheduledAt(scheduled_at, appointment_time);
-    if (!scheduledAtDate) {
+    const scheduledAtString = buildScheduledAtString(scheduled_at, appointment_time);
+    if (!scheduledAtString) {
       return res.status(400).json({ message: 'scheduled_at or appointment_time inválido' });
     }
 
     await pool.request()
       .input("patient_id", patient_id)
       .input("medic_id", medic_id)
-      .input("scheduled_at", scheduledAtDate)
+      .input("scheduled_at", sql.DateTime, scheduledAtString)
       .input("notes", notes)
       .query(`
         INSERT INTO appointments (patient_id, medic_id, scheduled_at, notes, completed, completed_at)

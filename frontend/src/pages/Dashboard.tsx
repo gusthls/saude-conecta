@@ -88,37 +88,22 @@ export function Dashboard({
                 if (medicId) params.set('medicId', String(medicId));
                 if (patientId) params.set('patientId', String(patientId));
 
-                const scheduledRes = await fetch(
+                const appointmentsRes = await fetch(
                     `http://localhost:3000/api/appointments${params.toString() ? `?${params.toString()}` : ''}`
                 );
-                const scheduled = scheduledRes.ok ? await scheduledRes.json() : [];
+                const appointmentsData = appointmentsRes.ok ? await appointmentsRes.json() : [];
 
-                const completedRes = await fetch(
-                    `http://localhost:3000/api/appointments/completed${params.toString() ? `?${params.toString()}` : ''}`
+                setAppointments(
+                    appointmentsData.map((a: any) => ({
+                        id: String(a.id),
+                        patientName: a.patientName || '',
+                        medic: a.medic || '',
+                        specialty: a.specialty || '',
+                        date: a.date || '',
+                        time: a.time || '',
+                        status: a.status as Appointment['status'],
+                    }))
                 );
-                const completed = completedRes.ok ? await completedRes.json() : [];
-
-                // Combine and set
-                setAppointments([
-                    ...scheduled.map((a: any) => ({
-                        id: String(a.id),
-                        patientName: a.patientName || '',
-                        medic: a.medic || '',
-                        specialty: a.specialty || '',
-                        date: a.date || '',
-                        time: a.time || '',
-                        status: 'scheduled' as const,
-                    })),
-                    ...completed.map((a: any) => ({
-                        id: String(a.id),
-                        patientName: a.patientName || '',
-                        medic: a.medic || '',
-                        specialty: a.specialty || '',
-                        date: a.date || '',
-                        time: a.time || '',
-                        status: 'completed' as const,
-                    })),
-                ]);
             } catch (e) {
                 console.error('Erro ao carregar consultas:', e);
             } finally {

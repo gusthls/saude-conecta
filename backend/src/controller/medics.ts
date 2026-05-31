@@ -19,9 +19,19 @@ export const getMedics = async (req: Request, res: Response) => {
 
 
 export const createMedic = async (req: Request, res: Response) => {
-  const { name, cpf, email, phone, password, rm, specialty_id, status_id } = req.body
+  const {
+    name,
+    cpf,
+    email,
+    phone,
+    password,
+    crm,
+    specialty_id,
+  } = req.body
 
-  if (!name || !cpf || !email || !password || !rm || !specialty_id || !status_id) {
+  const finalPassword = String(password || "S@udeC0necta");
+
+  if (!name || !cpf || !email || !phone || !crm || !specialty_id) {
     return res.status(400).json({
       message: "Campos obrigatórios não preenchidos"
     })
@@ -33,13 +43,12 @@ export const createMedic = async (req: Request, res: Response) => {
       .input("cpf", cpf)
       .input("email", email)
       .input("phone", phone)
-      .input("password", password)
-      .input("rm", rm)
+      .input("password", finalPassword)
+      .input("crm", crm)
       .input("specialty_id", specialty_id)
-      .input("status_id", status_id)
       .query(`
-        INSERT INTO agents (name, cpf, email, phone, password, agent_type, status_id)
-        VALUES (@name, @cpf, @email, @phone, @password, 'medic', @status_id)
+        INSERT INTO agents (agent_type, name, cpf, crm, email, phone, password, specialty_id)
+        VALUES ('medic', @name, @cpf, @crm, @email, @phone, @password, @specialty_id)
       `)
 
     return res.status(201).json({

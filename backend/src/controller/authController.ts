@@ -14,8 +14,8 @@ export const login = async (req: Request, res: Response) => {
     if (patientResult.recordset.length > 0) {
       const user = patientResult.recordset[0];
 
-      // Verifica se o usuário está ativo
-      if (user.active === 0) {
+      // Verifica se o usuário está ativo (cobre 0, '0' e false)
+      if (Number(user.active) === 0) {
         return res.status(403).json({ message: 'SEU USUÁRIO NÃO É CAPAZ DE REALIZAR O LOGIN, CONTATE O SUPORTE' });
       }
 
@@ -42,8 +42,8 @@ export const login = async (req: Request, res: Response) => {
 
     const agent = agentResult.recordset[0];
 
-    // Verifica se o agente está ativo
-    if (agent.active === 0) {
+    // Verifica se o agente está ativo (cobre 0, '0' e false)
+    if (Number(agent.active) === 0) {
       return res.status(403).json({ message: 'SEU USUÁRIO NÃO É CAPAZ DE REALIZAR O LOGIN, CONTATE O SUPORTE' });
     }
 
@@ -52,11 +52,10 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Normaliza o userType para a interface frontend
-    let userType = agent.agent_type ? String(agent.agent_type).toLowerCase() : 'agent';
-
-    // Mantém compatibilidade com o frontend que usa 'medic'
-    if (userType === 'medic') {
-      userType = 'medic';
+    // Se for admin, retorna 'admin', caso contrário considera como 'medic'
+    let userType = 'medic';
+    if (agent.agent_type && String(agent.agent_type).toLowerCase() === 'admin') {
+      userType = 'admin';
     }
 
     return res.status(200).json({
