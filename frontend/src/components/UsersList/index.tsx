@@ -22,6 +22,7 @@ export function UsersList() {
     const [editingUser, setEditingUser] = useState<UserItem | null>(null);
     const [confirmToggleUser, setConfirmToggleUser] = useState<UserItem | null>(null);
     const [loading, setLoading] = useState(false);
+    const [savingEdit, setSavingEdit] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -275,12 +276,57 @@ export function UsersList() {
 
                                 <Button
                                     type="button"
-                                    onClick={() => {
-                                        setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? editingUser : u)));
-                                        setEditingUser(null);
+                                    disabled={savingEdit}
+                                    onClick={async () => {
+                                        if (!editingUser) return;
+                                        setSavingEdit(true);
+                                        setError(null);
+
+                                        const backendId = editingUser.backendId ?? editingUser.id;
+                                        let endpoint = '';
+                                        switch (editingUser.role) {
+                                            case 'patient':
+                                                endpoint = `/api/patients/${backendId}`;
+                                                break;
+                                            case 'medic':
+                                                endpoint = `/api/medics/${backendId}`;
+                                                break;
+                                            case 'admin':
+                                                endpoint = `/api/admins/${backendId}`;
+                                                break;
+                                            default:
+                                                setError('Tipo de usuário inválido');
+                                                setSavingEdit(false);
+                                                return;
+                                        }
+
+                                        try {
+                                            const res = await fetch(`http://localhost:3000${endpoint}`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    name: editingUser.name,
+                                                    email: editingUser.email,
+                                                    phone: editingUser.phone,
+                                                    cpf: editingUser.cpf,
+                                                }),
+                                            });
+
+                                            if (!res.ok) {
+                                                throw new Error('Falha ao salvar usuário');
+                                            }
+
+                                            setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? editingUser : u)));
+                                            setEditingUser(null);
+                                        } catch (e) {
+                                            console.error(e);
+                                            setError('Não foi possível salvar as alterações');
+                                        } finally {
+                                            setSavingEdit(false);
+                                        }
                                     }}
                                 >
-                                    Salvar
+                                    {savingEdit ? 'Salvando...' : 'Salvar'}
                                 </Button>
                             </div>
                         </div>
