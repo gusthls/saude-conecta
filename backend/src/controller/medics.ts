@@ -58,9 +58,9 @@ export const createMedic = async (req: Request, res: Response) => {
 
 export const updateMedic = async (req: Request, res: Response) => {
   const { id } = req.params
-  const { name, email, phone, specialty_id } = req.body
+  const { name, email, phone, specialty_id, active } = req.body
 
-  if (!name && !email && !phone && !specialty_id) {
+  if (!name && !email && !phone && !specialty_id && active === undefined) {
     return res.status(400).json({
       message: "Nenhum campo para atualizar"
     })
@@ -73,12 +73,14 @@ export const updateMedic = async (req: Request, res: Response) => {
       .input("email", email)
       .input("phone", phone)
       .input("specialty_id", specialty_id)
+      .input("active", active)
       .query(`
         UPDATE agents
         SET name = COALESCE(@name, name),
             email = COALESCE(@email, email),
             phone = COALESCE(@phone, phone),
-            specialty_id = COALESCE(@specialty_id, specialty_id)
+            specialty_id = COALESCE(@specialty_id, specialty_id),
+            active = COALESCE(@active, active)
         WHERE id = @id
       `)
 
