@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface ForgotPasswordFormProps {
     onBackToLogin: () => void;
@@ -121,6 +122,7 @@ export function ForgotPasswordForm({
 
             if (response.ok) {
                 setError("");
+                toast.success('Senha atualizada com sucesso!');
                 // Sucesso - voltar para login após 2 segundos
                 setTimeout(() => {
                     onBackToLogin();
@@ -128,9 +130,11 @@ export function ForgotPasswordForm({
             } else {
                 const data = await response.json();
                 setError(data.message || "Erro ao atualizar senha");
+                toast.error(data.message || 'Erro ao atualizar senha');
             }
         } catch (err) {
             setError("Erro ao atualizar senha");
+            toast.error('Erro ao atualizar senha');
         } finally {
             setLoading(false);
         }

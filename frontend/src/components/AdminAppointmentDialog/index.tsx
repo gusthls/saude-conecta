@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useMemo, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "../Button";
 import { Input } from "../Input";
@@ -174,16 +175,19 @@ export function AdminAppointmentDialog({
                     /* ignore */
                 }
                 console.error('Erro ao criar consulta', res.status, bodyText);
+                toast.error('Erro ao agendar consulta');
                 return;
             }
 
             // Chamar callback local — ajustar specialty para enviar o nome, não o id, e garantir patientName correto
             const specialtyName = specialties.find(s => String(s.id) === data.specialty)?.name || data.specialty;
             onSubmit({ ...data, specialty: specialtyName, patientName: selectedPatient.name });
+            toast.success('Consulta agendada com sucesso!');
             reset();
             onOpenChange(false);
         } catch (e) {
             console.error('Erro ao agendar consulta:', e);
+            toast.error('Erro ao agendar consulta');
         }
     };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Users, Edit2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "../Button";
 
@@ -136,9 +137,11 @@ export function UsersList() {
                         : u
                 )
             );
+            toast.success(`Usuário ${nextActive ? 'ativado' : 'desativado'} com sucesso!`);
         } catch (patchError) {
             console.error(patchError);
             setError('Não foi possível atualizar o status do usuário');
+            toast.error('Erro ao atualizar o status do usuário');
         } finally {
             setConfirmToggleUser(null);
         }
@@ -318,9 +321,11 @@ export function UsersList() {
 
                                             setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? editingUser : u)));
                                             setEditingUser(null);
+                                            toast.success('Usuário atualizado com sucesso!');
                                         } catch (e) {
                                             console.error(e);
                                             setError('Não foi possível salvar as alterações');
+                                            toast.error('Erro ao salvar alterações');
                                         } finally {
                                             setSavingEdit(false);
                                         }
