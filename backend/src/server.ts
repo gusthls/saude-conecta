@@ -9,6 +9,7 @@ import patientRoutes from "./routes/patientsRoutes"
 import medicRoutes from "./routes/medicRoutes"
 import secretaryRoutes from "./routes/secretariesRoutes"
 import appointmentRoutes from "./routes/appointmentRoutes"
+import specialtiesRoutes from "./routes/specialtiesRoutes"
 
 dotenv.config()
 
@@ -48,6 +49,7 @@ app.use("/api", medicRoutes)
 app.use("/api", secretaryRoutes)
 app.use("/api", adminRoutes)
 app.use("/api", appointmentRoutes)
+app.use("/api", specialtiesRoutes)
 
 const start = async () => {
   try {
