@@ -6,24 +6,24 @@ import { LoginForm } from "./pages/LoginForm";
 import { RegistrationForm } from "./pages/RegistrationForm";
 import { ForgotPasswordForm } from "./pages/ForgotPasswordForm";
 import { Dashboard } from "./pages/Dashboard";
+import { Home } from "./pages/Home";
 
 import { Toaster } from "./components/Sonner";
 
+// O tipo aceita todas as telas do seu ecossistema
 type ViewType =
+    | "home"
     | "login"
     | "register"
     | "forgot-password";
 
 function App() {
     // controla se está logado
-    const [isLoggedIn, setIsLoggedIn] =
-        useState(false);
-
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userType, setUserType] = useState<UserType | null>(null);
 
-    // controla qual tela auth aparece
-    const [currentView, setCurrentView] =
-        useState<ViewType>("login");
+    // pagina inicial home
+    const [currentView, setCurrentView] = useState<ViewType>("home");
 
     const title =
         currentView === "login"
@@ -46,40 +46,40 @@ function App() {
     }
 
     // logout
-        function handleLogout() {
-                setIsLoggedIn(false);
-                setUserType(null);
+    function handleLogout() {
+        setIsLoggedIn(false);
+        setUserType(null);
 
-                // remove sessão
-                try {
-                    localStorage.removeItem('session');
-                } catch (e) {
-                    console.warn('Erro ao limpar sessão', e);
-                }
-
-                // volta pro login
-                setCurrentView("login");
+        // remove sessão
+        try {
+            localStorage.removeItem("session");
+        } catch (e) {
+            console.warn("Erro ao limpar sessão", e);
         }
 
-        // restaura sessão ao carregar a aplicação
-        useEffect(() => {
-            try {
-                const raw = localStorage.getItem('session');
-                if (!raw) return;
+        // Quando o usuário desloga, ele volta para a página inicial
+        setCurrentView("home");
+    }
 
-                const session = JSON.parse(raw);
-                if (session && session.expires && session.expires > Date.now()) {
-                    setIsLoggedIn(true);
-                    setUserType(session.userType as UserType);
-                } else {
-                    localStorage.removeItem('session');
-                }
-            } catch (e) {
-                console.warn('Erro ao restaurar sessão:', e);
+    // restaura sessão ao carregar a aplicação
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem("session");
+            if (!raw) return;
+
+            const session = JSON.parse(raw);
+            if (session && session.expires && session.expires > Date.now()) {
+                setIsLoggedIn(true);
+                setUserType(session.userType as UserType);
+            } else {
+                localStorage.removeItem("session");
             }
-        }, []);
+        } catch (e) {
+            console.warn("Erro ao restaurar sessão:", e);
+        }
+    }, []);
 
-    // se estiver logado mostra dashboard
+    // 1. SE ESTIVER LOGADO: Mostra o Dashboard de forma prioritária
     if (isLoggedIn) {
         return (
             <>
@@ -87,52 +87,48 @@ function App() {
                     onLogout={handleLogout}
                     userType={userType ?? "patient"}
                 />
-
                 <Toaster />
             </>
         );
     }
 
-    // senão mostra auth
+    // 2. SE NÃO ESTIVER LOGADO: Roda todo o resto do código junto
     return (
         <div className="size-full">
-            <AuthPage
-                title={title}
-                description={description}
-            >
-                {currentView === "login" && (
+            {/* TELA 1: Se a visualização for "home", roda a Home aqui dentro */}
+            {currentView === "home" && (
+                <Home onNavigateToLogin={() => setCurrentView("login")} />
+            )}
+
+            {/* TELAS 2, 3 e 4: Se for qualquer outra rota de autenticação, roda o AuthPage */}
+            {currentView !== "home" && (
+                <AuthPage
+                    title={title}
+                    description={description}
+                >
+                    {currentView === "login" && (
                         <LoginForm
-                        onSwitchToRegister={() =>
-                            setCurrentView(
-                                "register"
-                            )
-                        }
-                        onSwitchToForgotPassword={() =>
-                            setCurrentView(
-                                "forgot-password"
-                            )
-                        }
-                        onLogin={(type) => handleLogin(type)}
-                    />
-                )}
+                            onSwitchToRegister={() => setCurrentView("register")}
+                            onSwitchToForgotPassword={() => setCurrentView("forgot-password")}
+                            onLogin={handleLogin}
+                        />
+                    )}
 
-                {currentView === "register" && (
-                    <RegistrationForm
-                        onSwitchToLogin={() =>
-                            setCurrentView("login")
-                        }
-                    />
-                )}
+                    {currentView === "register" && (
+                        <RegistrationForm
+                            onSwitchToLogin={() => setCurrentView("login")}
+                        />
+                    )}
 
-                {currentView ===
-                    "forgot-password" && (
-                    <ForgotPasswordForm
-                        onBackToLogin={() =>
-                            setCurrentView("login")
-                        }
-                    />
-                )}
-            </AuthPage>
+                    {currentView === "forgot-password" && (
+                        <ForgotPasswordForm
+                            onBackToLogin={() => setCurrentView("login")}
+                        />
+                    )}
+                </AuthPage>
+            )}
+
+            {/* O Toaster agora assiste e roda junto com absolutamente qualquer tela deslogada */}
             <Toaster />
         </div>
     );
