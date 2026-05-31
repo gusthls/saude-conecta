@@ -146,24 +146,35 @@ export function AdminAppointmentDialog({
             const scheduledAt = `${data.date}T${data.time}`;
 
             // Enviar POST para criar consulta
+            const payload = {
+                patient_id: selectedPatient.id,
+                medic_id: selectedMedic.medic_id,
+                scheduled_at: scheduledAt,
+                appointment_time: data.time,
+            };
+
+            console.debug('Admin criando consulta, payload:', payload);
+
             const res = await fetch('http://localhost:3000/api/appointments', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    patient_id: selectedPatient.id,
-                    medic_id: selectedMedic.medic_id,
-                    scheduled_at: scheduledAt,
-                    appointment_time: data.time,
-                })
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) {
-                console.error('Erro ao criar consulta');
+                let bodyText: string | null = null;
+                try {
+                    bodyText = await res.text();
+                } catch (e) {
+                    /* ignore */
+                }
+                console.error('Erro ao criar consulta', res.status, bodyText);
                 return;
             }
 
-            // Chamar callback local
-            onSubmit(data);
+            // Chamar callback local — ajustar specialty para enviar o nome, não o id
+            const specialtyName = specialties.find(s => String(s.id) === data.specialty)?.name || data.specialty;
+            onSubmit({ ...data, specialty: specialtyName });
             reset();
             onOpenChange(false);
         } catch (e) {
