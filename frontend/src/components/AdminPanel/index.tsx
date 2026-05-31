@@ -265,7 +265,8 @@ export function AdminPanel({
                     </div>
                 </div>
 
-                {/* FILTROS */}
+                {/* FILTROS - hidden when managing users */}
+                {!showUsers && (
                 <div className="bg-white rounded-lg p-4 mb-8 border">
                     <h3 className="font-semibold text-lg mb-4">
                         Filtros
@@ -361,6 +362,7 @@ export function AdminPanel({
                         </Button>
                     )}
                 </div>
+                )}
 
                 {/* CONSULTAS or USERS */}
                 <div>
