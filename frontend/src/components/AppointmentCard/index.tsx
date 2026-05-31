@@ -27,9 +27,9 @@ export function AppointmentCard({
     onCancel,
 }: AppointmentCardProps) {
     const formatDate = (dateString: string) => {
-        const date = new Date(
-            dateString + "T00:00:00"
-        );
+        // Parse date string directly without timezone conversion
+        const [year, month, day] = dateString.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
 
         return date.toLocaleDateString("pt-BR", {
             day: "2-digit",
@@ -123,13 +123,15 @@ export function AppointmentCard({
                     </span>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-foreground">
-                    <Stethoscope className="w-4 h-4" />
+                {userType !== "medic" && (
+                    <div className="flex items-center gap-2 text-sm text-foreground">
+                        <Stethoscope className="w-4 h-4" />
 
-                    <span>
-                        {appointment.specialty}
-                    </span>
-                </div>
+                        <span>
+                            {appointment.specialty}
+                        </span>
+                    </div>
+                )}
 
                 {userType === "admin" && (
                     <div className="flex items-center gap-2 text-sm text-foreground">

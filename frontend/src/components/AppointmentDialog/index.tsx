@@ -168,8 +168,9 @@ export function AppointmentDialog({
                 return;
             }
 
-            // Chamar callback local (para atualizar UI imediatamente se necessário)
-            onSubmit(data);
+            // Chamar callback local com specialty como name, não id
+            const specialtyName = specialties.find(s => String(s.id) === data.specialty)?.name || data.specialty;
+            onSubmit({ ...data, specialty: specialtyName });
             reset();
             onOpenChange(false);
         } catch (e) {
