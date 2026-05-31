@@ -56,7 +56,7 @@ export function RegistrationForm({ onSwitchToLogin }: RegistrationFormProps) {
                     email: data.email,
                     phone: data.phone,
                     password: data.password,
-                    status: 1
+                    active: 1
                 }),
             });
 
