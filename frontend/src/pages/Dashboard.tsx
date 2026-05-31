@@ -46,6 +46,10 @@ export function Dashboard({
 
     const [appointments, setAppointments] =
         useState<Appointment[]>([]);
+    const [cancelModalOpen, setCancelModalOpen] =
+        useState(false);
+    const [cancelAppointmentId, setCancelAppointmentId] =
+        useState<string | null>(null);
 
     // loading state currently unused; keep if needed later
 
@@ -140,36 +144,83 @@ export function Dashboard({
         ]);
     };
 
-    const handleCancelAppointment = (
+    const handleCancelAppointment = async (
         id: string
     ) => {
-        setAppointments(
-            appointments.map((appointment) =>
-                appointment.id === id
-                    ? {
-                          ...appointment,
-                          status:
-                              "cancelled" as const,
-                      }
-                    : appointment
-            )
-        );
+        try {
+            const res = await fetch(
+                `http://localhost:3000/api/appointments/${id}`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ canceled: true }),
+                }
+            );
+            if (res.ok) {
+                setAppointments(
+                    appointments.map((appointment) =>
+                        appointment.id === id
+                            ? {
+                                  ...appointment,
+                                  status:
+                                      "cancelled" as const,
+                              }
+                            : appointment
+                    )
+                );
+            }
+        } catch (e) {
+            console.error('Erro ao cancelar consulta:', e);
+        }
     };
 
-    const handleCompleteAppointment = (
+    const requestCancelAppointment = (
         id: string
     ) => {
-        setAppointments(
-            appointments.map((appointment) =>
-                appointment.id === id
-                    ? {
-                          ...appointment,
-                          status:
-                              "completed" as const,
-                      }
-                    : appointment
-            )
-        );
+        setCancelAppointmentId(id);
+        setCancelModalOpen(true);
+    };
+
+    const handleConfirmCancel = () => {
+        if (!cancelAppointmentId) return;
+        handleCancelAppointment(cancelAppointmentId);
+        setCancelAppointmentId(null);
+        setCancelModalOpen(false);
+    };
+
+    const handleDismissCancel = () => {
+        setCancelAppointmentId(null);
+        setCancelModalOpen(false);
+    };
+
+    const handleCompleteAppointment = async (
+        id: string
+    ) => {
+        try {
+            const res = await fetch(
+                `http://localhost:3000/api/appointments/${id}`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ completed: true }),
+                }
+            );
+            if (res.ok) {
+                setAppointments(
+                    appointments.map((appointment) =>
+                        appointment.id === id
+                            ? {
+                                  ...appointment,
+                                  status:
+                                      "completed" as const,
+                              }
+                            : appointment
+                    )
+                );
+            }
+        } catch (e) {
+            console.error('Erro ao completar consulta:', e);
+        }
     };
 
     const scheduledAppointments =
@@ -372,12 +423,11 @@ export function Dashboard({
                                         userType
                                     }
                                     onCancel={
-                                        handleCancelAppointment
+                                        requestCancelAppointment
                                     }
                                 />
 
-                                {userType ===
-                                    "medic" &&
+                                {userType === "medic" &&
                                     appointment.status ===
                                         "scheduled" && (
                                         <Button
@@ -413,6 +463,33 @@ export function Dashboard({
                     }
                 />
             )}
+
+            {cancelModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                        <h3 className="text-xl font-semibold text-primary mb-3">
+                            Confirmar cancelamento
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-6">
+                            Tem certeza de que deseja cancelar esta consulta?
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={handleDismissCancel}
+                            >
+                                Não
+                            </Button>
+                            <Button
+                                onClick={handleConfirmCancel}
+                            >
+                                Sim, cancelar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
