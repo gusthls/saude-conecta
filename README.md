@@ -135,4 +135,18 @@ Este projeto está sob a licença MIT. Consulte o arquivo [LICENSE](LICENSE) par
 
 ---
 
-Feito por [gusthls](https://github.com/gusthls)
+## 👥 Equipe
+
+| Nome | GitHub |
+|---|---|
+| Gustavo Henrique (gusthls) | [@gusthls](https://github.com/gusthls) |
+| Gisele Bezerra de Almeida | [@GiseleBezerra](https://github.com/GiseleBezerra) |
+| Jéssica Silva | [@jessica-silva-dev](https://github.com/jessica-silva-dev) |
+| Victor | [@Victor-Cyber007](https://github.com/Victor-Cyber007) |
+| Gustavo Urbano Alvarenga | [@Gustavo-Urbano-Alvarenga](https://github.com/Gustavo-Urbano-Alvarenga) |
+
+### Integrantes na documentação
+
+- Hugo Vinicius Soares Santos
+- Jonas Marques de Oliveira 
+- Tamires Dionizia de Jesus Alves 
